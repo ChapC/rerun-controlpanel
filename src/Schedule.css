@@ -1,0 +1,90 @@
+.listItem {
+    height: 65px;
+    width: 100%;
+    margin: 5px 0;
+    box-sizing: border-box;
+    background-color: white;
+    display: flex;
+    justify-content: space-between;
+}
+
+.listItemMiddle {
+    height: 100%;
+    flex: 1;
+    padding: 5px 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: hidden;
+}
+
+.listItemHandle {
+    height: 100%;
+    width: 15%;
+    min-width: 83px;
+    max-width: 100px;
+    background-color: #282482;
+    padding: 0 5px;
+    box-sizing: border-box;
+}
+
+.listContainer {
+    height: 100%;
+    width: 100%;
+    background-color: #f5f5f5;
+    overflow: auto;
+    padding: 0 10px;
+    box-sizing: border-box;
+}
+
+.centerFlex {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.listItemButtons {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    padding: 3px;
+    box-sizing: border-box;
+}
+
+.scheduleItemName {
+    font-size: 1.2em !important;
+}
+
+.scheduleItemSub {
+    font-size: 1em !important;
+}
+
+@media only screen and (max-width: 630px) {
+    .scheduleItemName {
+        font-size: 0.9em !important;
+    }
+    .scheduleItemSub {
+        font-size: 0.8em !important;
+    }
+}
+
+.scheduleTime {
+    color: white;
+}
+
+.mediaStatus {
+    border-radius: 10px;
+    padding: 0 5px;
+    margin-left: 10px;
+    height: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.mediaStatusText {
+    color: white;
+    font-weight: 300;
+}

@@ -1,0 +1,61 @@
+.statusCard {
+    width: 100%;
+    padding-top: 15px;
+    box-sizing: border-box;
+    margin-bottom: 15px;
+}
+
+.currentContentContainer {
+    display: flex;
+    align-items: center;
+    padding: 0px 15px;
+}
+
+.currentContentThumb {
+    flex-shrink: 0;
+    flex-grow: 0;
+    background-color: #f0f0f0;
+    height: 125px;
+    width: 125px;
+    border-radius: 20px;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.currentContentDetails {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    overflow: hidden;
+}
+
+.currentContentSubDetails {
+    background-color: #f0f0f0;
+    border-radius: 3px;
+    padding: 0 5px;
+    display: flex;
+    align-items: center;
+    border: 1px solid #9b9b9b;
+}
+
+.flexSpacer {
+    flex-grow: 1;
+}
+
+.currentProgressContainer {
+    display: flex;
+    align-items: center;
+}
+
+.onScreenActions {
+    margin-top: 10px;
+    width: 100%;
+    min-height: 45px;
+}
+
+.flexButton {
+    flex-grow: 1;
+    flex: 1;
+}
