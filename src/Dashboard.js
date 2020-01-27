@@ -107,6 +107,10 @@ export function Dashboard(props) {
             setNewPlayerState(newPlayerState);
           });
     }
+
+    if (hasSetServerCallbacks && onScreenBlock == null) {
+      requestPlayerRefresh();
+    }
   
     const onScheduleListChange = (newList, changeObject) => {
       setScheduleList(newList); //Update the local list

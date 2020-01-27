@@ -1,0 +1,33 @@
+.eventCardGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.eventCardRoot {
+    background-color: lightcoral;
+    width: 280px;
+    height: 280px;
+    margin: 10px 0;
+    justify-self: center;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+.eventCardHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 10px;
+    border-bottom: 1px solid rgb(221, 221, 221);
+}
+
+.eventCardBody {
+    flex: 1;
+}
+
+.eventCardFooter {
+    padding: 5px 10px;
+    height: 10%;
+    border-top: 1px solid rgb(221, 221, 221);
+}

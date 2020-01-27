@@ -10,11 +10,19 @@ export class ServerConnection {
         this.heartBeatTimeout = setTimeout(() => this.websocket.close(), 10000 + 1500); //Server ping frequency + 1.5s wiggle
     }
 
+    queuedForSend = [];
+
     constructor(serverAddress) {
         this.websocket = new WebSocket(serverAddress);
         
         this.websocket.addEventListener('open', () => {
             console.info('%c ✅ Connected to Rerun server', 'color: green');
+
+            //Send any queued messages
+            for (let message of this.queuedForSend) {
+                this.websocket.send(message);
+            }
+
             this.heartbeat();
         });
         this.websocket.addEventListener('message', (event) => {
@@ -72,7 +80,15 @@ export class ServerConnection {
 
         this.openRequests[requestID] = resPromiseResovler;
 
-        this.websocket.send(JSON.stringify({reqId: requestID, req: requestName, data: data}));
+        const message = JSON.stringify({reqId: requestID, req: requestName, data: data});
+        if (this.websocket.readyState === 1) {
+            this.websocket.send(message);
+        } else {
+            //Socket not yet connected, queue this message
+            console.info('Request "' + requestName + '" was queued for sending - the websocket is not yet open');
+            this.queuedForSend.push(message);
+        } 
+
 
         return resPromise;
     }

@@ -10,7 +10,8 @@ import Drawer from '@material-ui/core/Drawer';
 import ServerConnection from './ServerConnection';
 import {Dashboard} from './Dashboard';
 import {SideNavList} from './SideNavList';
-import { BrowserRouter, Route, Link } from "react-router-dom";
+import { Route, Switch } from "react-router-dom";
+import {EventsPage} from './EventsPage';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -37,27 +38,53 @@ function ControlPanel() {
     setServer(new ServerConnection('ws://192.168.0.122:8080/controlWS'));
   }
 
+  const appBarTitle = (path) => {
+    switch (path) {
+      case '/events': return 'Events';
+      case '/sources': return 'Content sources';
+      case '/settings': return 'Settings';
+      default: return 'Dashboard';
+    }
+  }
+
   return (
-    <div>
-      <AppBar position="static">
-        <Toolbar className={classes.headerbar}>
-          <IconButton edge="start" className={classes.menuButton} onClick={()=>setDrawerOpen(true)} color="inherit" aria-label="menu">
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" className={classes.title}>
-            Dashboard
-          </Typography>
-        </Toolbar>
-      </AppBar>
+    <Route>
+      {({ location, history }) => (
+        <div>
+          <AppBar position="static">
+            <Toolbar className={classes.headerbar}>
+              <IconButton edge="start" className={classes.menuButton} onClick={() => setDrawerOpen(true)} color="inherit" aria-label="menu">
+                <MenuIcon />
+              </IconButton>
+              <Typography variant="h6" className={classes.title}>
+                {appBarTitle(location.pathname)}
+              </Typography>
+            </Toolbar>
+          </AppBar>
 
-      <Drawer anchor='left' open={drawerOpen} onClose={()=>setDrawerOpen(false)}>
-        <SideNavList />
-      </Drawer>
+          <Drawer anchor='left' open={drawerOpen} onClose={() => setDrawerOpen(false)}>
+            <SideNavList location={location} navTo={(address) => {history.push(address); setDrawerOpen(false)}} />
+          </Drawer>
 
-      <div id='pageContent'>
-        <Dashboard server={server}/>
-      </div>
-    </div>
+          <div id='pageContent'>
+            <Switch>
+              <Route exact path='/'>
+                <Dashboard server={server} />
+              </Route>
+              <Route exact path='/events'>
+                <EventsPage server={server} />
+              </Route>
+              <Route exact path='/sources'>
+                <h1>Content sources</h1>
+              </Route>
+              <Route exact path='/settings'>
+                <h1>Settings</h1>
+              </Route>
+            </Switch>
+          </div>
+        </div>
+      )}
+    </Route>
   );
 }
 

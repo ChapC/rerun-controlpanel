@@ -65,3 +65,9 @@
         padding: 5px;
     }
 }
+
+.navListSelectedText > span {
+    font-weight: 600;
+    color: #552da6;
+    user-select: none;
+}

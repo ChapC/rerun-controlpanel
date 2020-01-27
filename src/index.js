@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import './index.css';
-import App from './ControlPanel.js';
-ReactDOM.render(<App />, document.getElementById('root'));
+import ControlPanel from './ControlPanel.js';
+import { BrowserRouter } from "react-router-dom";
+ReactDOM.render(<BrowserRouter><ControlPanel /></BrowserRouter>, document.getElementById('root'));
