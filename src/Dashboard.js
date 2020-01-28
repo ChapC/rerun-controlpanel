@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './Dashboard.css';
 import { makeStyles } from '@material-ui/core/styles';
 import Typography from '@material-ui/core/Typography';
@@ -8,6 +8,7 @@ import MovieIcon from '@material-ui/icons/Movie';
 import SkipNextIcon from '@material-ui/icons/SkipNext';
 import StopIcon from '@material-ui/icons/Stop';
 import ReplayIcon from '@material-ui/icons/Replay';
+import PauseIcon from '@material-ui/icons/Pause';
 import Card from '@material-ui/core/Card';
 import Divider from '@material-ui/core/Divider';
 import LinearProgress from '@material-ui/core/LinearProgress';
@@ -55,6 +56,10 @@ const userStyles = makeStyles(theme => ({
     fullButtonGroup: {
       width: '100%',
       height: '100%'
+    },
+    pauseIcon: {
+      color: 'white',
+      fontSize: '5em'
     }
   }));
 
@@ -72,20 +77,30 @@ export function Dashboard(props) {
     const [onScreenBlock, setOnScreenBlock] = useState(null);
     const [scheduleList, setScheduleList] = useState([]);
     const [progressMs, setProgressMs] = useState(0);
-    const [hasSetServerCallbacks, setDidCallback] = useState(false);
+    const [playerPauseReason, setPauseReason] = useState(null);
 
     const server = props.server;
-    if (!hasSetServerCallbacks) {
-        server.onMessage('setPlayerState', (messageData) => {
-            setNewPlayerState(messageData);
-        });
-        setDidCallback(true);
-    }
+
+    useEffect(() => {
+      const listener = server.addMessageListener('setPlayerState', (messageData) => {
+        setNewPlayerState(messageData);
+      });
+
+      if (onScreenBlock == null) {
+        requestPlayerRefresh();
+      }
+
+      return () => {
+        server.removeMessageListener(listener)
+        clearInterval(currentProgressTimer);
+      };
+    });
   
     const setNewPlayerState = (newState) => {
       setOnScreenBlock(newState.currentBlock);
       setScheduleList(newState.queue);
       setProgressMs(newState.progressMs);
+      setPauseReason(newState.pauseReason);
   
       //Reset the progress timer
       if (currentProgressTimer != null) {
@@ -106,10 +121,6 @@ export function Dashboard(props) {
             console.info('Received new player state');
             setNewPlayerState(newPlayerState);
           });
-    }
-
-    if (hasSetServerCallbacks && onScreenBlock == null) {
-      requestPlayerRefresh();
     }
   
     const onScheduleListChange = (newList, changeObject) => {
@@ -159,6 +170,8 @@ export function Dashboard(props) {
     let currentProgressMs = '0:00';
     let currentProgressBarValue = 0;
     let scheduleStartTime = moment();
+    let scheduleListLength = scheduleList ? scheduleList.length : 0;
+    let playerPaused = (playerPauseReason != null);
     if (onScreenBlock != null) {
       onScreen = onScreenBlock;
   
@@ -176,38 +189,44 @@ export function Dashboard(props) {
     return (
         <div>
             <Card className='statusCard'>
-                <Typography variant="h5" className={classes.cardTitle}>On screen now</Typography>
-
-                <div className='currentContentContainer'>
-                    <div className='currentContentThumb'>
-                        <MovieIcon className={classes.largeTransparentIcon}></MovieIcon>
-                    </div>
-                    <div className='currentContentDetails'>
-                        <Typography variant="h4" style={{ fontSize: '1.5em', paddingBottom: '5px' }} noWrap>{onScreen.media.name}</Typography>
-                        <div style={{ display: 'flex' }}>
-                            <div className='currentContentSubDetails'>
-                                <Typography variant="subtitle2" className={classes.subDetailTitle}>Content type:</Typography>
-                                <Typography variant="subtitle2">{onScreen.media.type}</Typography>
-                                <Divider orientation='vertical' className={classes.vDivider}></Divider>
-                                <Typography variant="subtitle2" className={classes.subDetailTitle}>Source:</Typography>
-                                <Typography variant="subtitle2">{onScreen.media.location.type}</Typography>
-                            </div>
-                            <div className='flexSpacer'></div>
-                        </div>
-                        <div className='currentProgressContainer'>
-                            <Typography variant="subtitle1">{currentProgressMs}</Typography>
-                            <LinearProgress variant="determinate" value={currentProgressBarValue} className={classes.fullLengthProgress} />
-                            <Typography variant="subtitle1">{currentDuration}</Typography>
-                        </div>
-                    </div>
+                <div className='statusPauseOverlay' style={{display: (playerPaused ? 'flex' : 'none')}}>
+                  <PauseIcon className={classes.pauseIcon} />
+                  <Typography variant="h5">Paused by {(playerPaused ? playerPauseReason.source : '')}</Typography>
                 </div>
+                <div style={{filter: (playerPaused ? 'blur(5px)' : 'none')}}>
+                  <Typography variant="h5" className={classes.cardTitle}>On screen now</Typography>
 
-                <div className='onScreenActions'>
-                    <ButtonGroup color="primary" aria-label="outlined primary button group" className={classes.fullButtonGroup}>
-                        <Button className='flexButton' startIcon={<SkipNextIcon />} onClick={onNextBlockClicked}>Next block</Button>
-                        <Button className='flexButton' startIcon={<StopIcon />} onClick={onStopClicked}>Stop to title</Button>
-                        <Button className='flexButton' startIcon={<ReplayIcon />} onClick={onRestartClicked}>Restart playback</Button>
-                    </ButtonGroup>
+                  <div className='currentContentContainer'>
+                      <div className='currentContentThumb'>
+                          <MovieIcon className={classes.largeTransparentIcon}></MovieIcon>
+                      </div>
+                      <div className='currentContentDetails'>
+                          <Typography variant="h4" style={{ fontSize: '1.5em', paddingBottom: '5px' }} noWrap>{onScreen.media.name}</Typography>
+                          <div style={{ display: 'flex' }}>
+                              <div className='currentContentSubDetails'>
+                                  <Typography variant="subtitle2" className={classes.subDetailTitle}>Content type:</Typography>
+                                  <Typography variant="subtitle2">{onScreen.media.type}</Typography>
+                                  <Divider orientation='vertical' className={classes.vDivider}></Divider>
+                                  <Typography variant="subtitle2" className={classes.subDetailTitle}>Source:</Typography>
+                                  <Typography variant="subtitle2">{onScreen.media.location.type}</Typography>
+                              </div>
+                              <div className='flexSpacer'></div>
+                          </div>
+                          <div className='currentProgressContainer'>
+                              <Typography variant="subtitle1">{currentProgressMs}</Typography>
+                              <LinearProgress variant="determinate" value={currentProgressBarValue} className={classes.fullLengthProgress} />
+                              <Typography variant="subtitle1">{currentDuration}</Typography>
+                          </div>
+                      </div>
+                  </div>
+
+                  <div className='onScreenActions'>
+                      <ButtonGroup color="primary" aria-label="outlined primary button group" className={classes.fullButtonGroup}>
+                          <Button disabled={scheduleListLength < 1} className='flexButton' startIcon={<SkipNextIcon />} onClick={onNextBlockClicked}>Next block</Button>
+                          <Button className='flexButton' startIcon={<StopIcon />} onClick={onStopClicked}>Stop to title</Button>
+                          <Button className='flexButton' startIcon={<ReplayIcon />} onClick={onRestartClicked}>Restart playback</Button>
+                      </ButtonGroup>
+                  </div>
                 </div>
             </Card>
 

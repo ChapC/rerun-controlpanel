@@ -1,3 +1,14 @@
+.flexCenter {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.backgroundText {
+    opacity: 0.8;
+    user-select: none;
+}
+
 .eventCardGrid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -26,8 +37,41 @@
     flex: 1;
 }
 
+.eventCardBody > div {
+    height: 100%;
+    width: 100%;
+    padding: 5px 10px;
+}
+
 .eventCardFooter {
     padding: 5px 10px;
     height: 10%;
     border-top: 1px solid rgb(221, 221, 221);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.playerEventDescription {
+    box-sizing: border-box;
+}
+
+.playerEventDescription > div {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+.playerEventIcon {
+    margin-right: 10px;
+    box-sizing: border-box;
+    opacity: 0.8;
+}
+
+.playerEventActionContainer {
+    width: 100%;
+    min-height: 30px;
+    border-radius: 5px;
+    background-color: rgb(243, 243, 243);
+    padding: 5px 10px;
+    box-sizing: border-box;
 }

@@ -1,6 +1,6 @@
 export class ServerConnection {
     websocket = null;
-    callbackMap = {}; //Maps a server event type to a callback
+    listenerMap = {}; //Maps a server event type to a list of listeners
     openRequests = {}; //Maps a request ID to the request's promise
 
     heartBeatTimeout = null;
@@ -51,9 +51,11 @@ export class ServerConnection {
                 }
 
                 //Check if there's a callback registered for this message
-                let callback = this.callbackMap[serverEvent.eventName];
-                if (callback != null) {
-                    callback(serverEvent.data);
+                let callbackList = this.listenerMap[serverEvent.eventName];
+                if (callbackList != null) {
+                    for (let callback of callbackList) {
+                        callback.accept(serverEvent.data);
+                    }
                 }
             }
         });
@@ -63,9 +65,27 @@ export class ServerConnection {
         });
     }
 
+    listenerIdCounter = 0;
     //Register message callback
-    onMessage(messageName, callback) {
-        this.callbackMap[messageName] = callback;
+    addMessageListener(messageName, callback) {
+        let listenerId = this.listenerIdCounter++;
+        let messageListeners = this.listenerMap[messageName];
+        if (messageListeners == null) {
+            this.listenerMap[messageName] = [];
+            messageListeners = this.listenerMap[messageName];
+        }
+        this.listenerMap[messageName].push({id: listenerId, accept: callback});
+        return {messageName: messageName, id: listenerId};
+    }
+
+    removeMessageListener(listener) {
+        for (let i = 0; i < this.listenerMap[listener.messageName].length; i++) {
+            const l = this.listenerMap[listener.messageName][i];
+            if (l.id === listener.id) {
+                this.listenerMap[listener.messageName].splice(i, 1);
+                return;
+            }
+        }
     }
 
     requestIDCounter = 0;
