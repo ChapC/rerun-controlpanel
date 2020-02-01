@@ -50,7 +50,7 @@ function ControlPanel() {
   return (
     <Route>
       {({ location, history }) => (
-        <div>
+        <div style={{position: 'relative'}}>
           <AppBar position="static">
             <Toolbar className={classes.headerbar}>
               <IconButton edge="start" className={classes.menuButton} onClick={() => setDrawerOpen(true)} color="inherit" aria-label="menu">

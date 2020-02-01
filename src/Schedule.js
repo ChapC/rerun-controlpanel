@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {DragDropContext, Droppable, Draggable} from 'react-beautiful-dnd';
 import Card from '@material-ui/core/Card';
 import Typography from '@material-ui/core/Typography';
@@ -6,11 +6,40 @@ import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import moment from 'moment';
+import { FullscreenModal } from './FullscreenModal';
+import { ContentBlockEditor } from './ContentBlockEditor';
 import './Schedule.css';
 
-export function Schedule(props) {
-    let blockStartTime = moment(props.startTime);
+const contentBlockTemplate = {
+    media: {
+      name: '', type: '', location: {path: ''}
+    },
+    playbackConfig: {
+      trimStartSec: 0, trimEndSec: 0
+    }
+}
 
+export function Schedule(props) {
+    const [showContentBlockEditor, setShowContentBlockEditor] = useState(false);
+    const [contentBlockEditTarget, setContentBlockEditTarget] = useState(contentBlockTemplate);
+
+    const onEditBlockChange = (changedProperty, newValue) => {
+      //Changedproperty supports setting object members with the syntax 'object.child.targetproperty'
+      let objectNames = changedProperty.split('.');
+      let targetPropertyName = objectNames.splice(-1, 1)[0];
+
+      let modifiedBlock = Object.assign({}, contentBlockEditTarget);
+
+      let targetObject = modifiedBlock;
+      for (let objectName of objectNames) {
+          targetObject = targetObject[objectName];
+      }
+      targetObject[targetPropertyName] = newValue;
+
+      setContentBlockEditTarget(modifiedBlock);
+  }
+
+    let blockStartTime = moment(props.startTime);
     
     const onBlockDelete = (index) => {
         let targetBlockId = props.items[index].id;
@@ -20,10 +49,24 @@ export function Schedule(props) {
         props.onListUpdate(newItemsList, {contentBlockId: targetBlockId, fromIndex: index, toIndex: -1});
     }
 
+    const onBlockEditorSubmit = () => {
+        props.server.request('updateContentBlock', {block: contentBlockEditTarget}).then(() => {
+            setShowContentBlockEditor(false);
+        }).catch(error => {
+            console.error('Content block update failed', error);
+            alert('Error from server:\n' + error.message);
+        });
+    }
+
+    const showBlockEditor = (contentBlock) => {
+        setContentBlockEditTarget(JSON.parse(JSON.stringify(contentBlock)));
+        setShowContentBlockEditor(true);
+    }
+
+    //Convert the contentBlocks into ScheduleListItems
     let listItems = props.items.map((contentBlock, listIndex) => {
-        //Convert our contentBlocks into ScheduleListItems
-        let listItem = ( <ScheduleListItem media={contentBlock.media} id={contentBlock.id} 
-                status={contentBlock.status} startTime={blockStartTime}
+        let listItem = ( <ScheduleListItem media={contentBlock.media} id={contentBlock.id} colour={contentBlock.colour}
+                status={contentBlock.status} startTime={blockStartTime} onEditClicked={() => showBlockEditor(contentBlock)}
                 index={listIndex} key={contentBlock.id} onDeleteClicked={() => onBlockDelete(listIndex)}/>
         );
                 
@@ -58,16 +101,23 @@ export function Schedule(props) {
 
     if (props.items != null && props.items.length > 0) {
         return (
-            <DragDropContext onDragEnd={onDragEnd}>
-                <Droppable droppableId={'schedule'}>
-                    {provided => (
-                        <div className='listContainer' {...provided.droppableProps} ref={provided.innerRef} style={{...props.style}}>
-                            {listItems}
-                            {provided.placeholder}
-                        </div>
-                    )}
-                </Droppable>
-            </DragDropContext>
+            <div>
+                <DragDropContext onDragEnd={onDragEnd}>
+                    <Droppable droppableId={'schedule'}>
+                        {provided => (
+                            <div className='listContainer' {...provided.droppableProps} ref={provided.innerRef} style={{ ...props.style }}>
+                                {listItems}
+                                {provided.placeholder}
+                            </div>
+                        )}
+                    </Droppable>
+                </DragDropContext>
+
+                <FullscreenModal title={'Edit content block'} onSubmit={onBlockEditorSubmit}
+                 show={showContentBlockEditor} onCancel={() => setShowContentBlockEditor(false)}>
+                    <ContentBlockEditor block={contentBlockEditTarget} onPropertyChange={onEditBlockChange} />
+                </FullscreenModal>
+            </div>
         )
     } else {
         return (
@@ -91,7 +141,7 @@ export function ScheduleListItem(props) {
           <Draggable draggableId={'draggable' + props.id} index={props.index}>
               {provided => (
                 <Card className='listItem' {...provided.draggableProps} ref={provided.innerRef}>
-                    <div className='listItemHandle' {...provided.dragHandleProps}>
+                    <div className='listItemHandle' {...provided.dragHandleProps} style={{backgroundColor: props.colour}}>
                         <div style={{display: 'flex'}}>
                             <Typography variant="h6" className='scheduleTime'>{startTimeNumbers}</Typography>
                             <Typography variant="subtitle1" className='scheduleTime'>{startTimeAMPM}</Typography>
@@ -107,7 +157,7 @@ export function ScheduleListItem(props) {
                     </div>
 
                     <div className='listItemButtons'>
-                        <IconButton size='small'>
+                        <IconButton size='small' onClick={props.onEditClicked}>
                             <EditIcon fontSize='small' />
                         </IconButton>
                         <IconButton size='small' onClick={props.onDeleteClicked}>
