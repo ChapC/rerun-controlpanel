@@ -19,7 +19,7 @@ import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import InputLabel from '@material-ui/core/InputLabel';
 import MenuItem from '@material-ui/core/MenuItem';
-import FormHelperText from '@material-ui/core/FormHelperText';
+import AddIcon from '@material-ui/icons/Add';
 import FormControl from '@material-ui/core/FormControl';
 import Divider from '@material-ui/core/Divider';
 import Select from '@material-ui/core/Select';
@@ -35,14 +35,19 @@ const userStyles = makeStyles(theme => ({
     }
 }));
 
+const defaultEvent = {
+    event: {
+        type: 'Player', targetPlayerEvent: 'start', eventOffset: 3000,
+        frequency: 1, name: 'New event', action: {}
+    }
+};
+
 export function EventsPage(props) {
     const server = props.server;
     const [eventsList, setEventsList] = useState(null);
-    const [editorTarget, setEditorTarget] = useState({event: {
-        type: 'Player', targetPlayerEvent: 'start', eventOffset: 3000,
-        frequency: 3, name: 'New event', action: {}
-    }});
+    const [editorTarget, setEditorTarget] = useState(defaultEvent);
     const [showEditor, setShowEditor] = useState(false);
+    const [creatingNewEvent, setCreatingNewEvent] = useState(false);
 
     useEffect(() => {
         if (eventsList == null) {
@@ -64,19 +69,40 @@ export function EventsPage(props) {
             .catch((error) => console.error('Failed to set event enabled: ', error));
     }
 
+    const deleteEvent = (eventId) => {
+        server.request('deleteEvent', {eventId: eventId})
+            .catch((error) => console.error('Failed to delete event:', error));
+    }
+
     const showEditDialog = (event) => {
         setEditorTarget(event);
+        setCreatingNewEvent(false);
+        setShowEditor(true);
+    }
+
+    const showNewDialog = () => {
+        setEditorTarget(defaultEvent);
+        setCreatingNewEvent(true);
         setShowEditor(true);
     }
 
     let cards = null;
     if (eventsList != null) {
-        cards = eventsList.map((tEvent, index) => (
-            <EventCard event={tEvent.event} enabled={tEvent.enabled} 
-                onSetEnabled={(enabled) => onSetEventEnabled(tEvent.id, enabled)} 
-                onEditClicked={() => showEditDialog(tEvent)}
-                key={'eventcard' + tEvent.id} />
-        ))
+        if (eventsList.length == 0) {
+            cards = (
+                <div className='centerFlex' style={{marginTop: '10px'}}>
+                    <Typography>No events</Typography>
+                </div>
+            );
+        } else {
+            cards = eventsList.map((tEvent, index) => (
+                <EventCard event={tEvent.event} enabled={tEvent.enabled} 
+                    onSetEnabled={(enabled) => onSetEventEnabled(tEvent.id, enabled)} 
+                    onEditClicked={() => showEditDialog(tEvent)}
+                    onDeleteClicked={() => deleteEvent(tEvent.id)}
+                    key={'eventcard' + tEvent.id} />
+            ))
+        }
     }
 
     const onEventEditorChange = (changedProperty, newValue) => {
@@ -101,21 +127,26 @@ export function EventsPage(props) {
     }
 
     const eventEditorSubmit = () => {
-        //Submit the current editorTarget
-        server.request('updateEvent', {eventId: editorTarget.id, newEvent: editorTarget.event}).then(() => {
-            setShowEditor(false);
-        });
+        if (creatingNewEvent) {
+            server.request('createEvent', editorTarget.event).then(() => setShowEditor(false));
+        } else {
+            //Submit the current editorTarget
+            server.request('updateEvent', {eventId: editorTarget.id, newEvent: editorTarget.event}).then(() => {
+                setShowEditor(false);
+            });
+        }
     }
 
     return (
         <div>
+            <Button variant='outlined' startIcon={<AddIcon />} onClick={showNewDialog} style={{width: '100%'}}>Create event</Button>
             <div className='eventCardGrid'>
                 {cards}
             </div>
 
             <Dialog open={showEditor} onClose={() => setShowEditor(false)}>
                 <EventEditorDialog event={editorTarget.event} onPropertyChange={onEventEditorChange} 
-                    isNewEvent={false} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}
+                    isNewEvent={creatingNewEvent} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}
                     server={server} />
             </Dialog>
         </div>
@@ -248,7 +279,7 @@ function EventCard(props) {
                     <EditIcon />
                 </IconButton>
                 <Typography variant='subtitle1' className='backgroundText' noWrap>{eventTypeText}</Typography>
-                <IconButton size='small'>
+                <IconButton size='small' onClick={props.onDeleteClicked}>
                     <DeleteIcon />
                 </IconButton>
             </div>
@@ -343,7 +374,7 @@ function EventEditorDialog(props) {
             const onLayerChanged = (layerName) => {
                 props.onPropertyChange('action.targetLayer', layerName);
                 //If the layer has the duration for an 'in' animation defined, use that as the GraphicAction's animInTime
-                if (graphicLayerMap[layerName].animationTimings) {
+                if (graphicLayerMap[layerName] && graphicLayerMap[layerName].animationTimings) {
                     let inTime = graphicLayerMap[layerName].animationTimings.in;
                     if (inTime != undefined) {
                         props.onPropertyChange('action.animInTime', inTime);
@@ -355,8 +386,9 @@ function EventEditorDialog(props) {
             graphicLayersSelect = (
                 <FormControl style={{marginTop: '10px'}}>
                     <InputLabel>Target layer</InputLabel>
-                    <Select value={props.event.action.targetLayer} onChange={(ev) => onLayerChanged(ev.target.value)}
+                    <Select value={props.event.action.targetLayer ? props.event.action.targetLayer : 'none'} onChange={(ev) => onLayerChanged(ev.target.value)}
                         variant='filled'>
+                            <MenuItem value='none'>(None)</MenuItem>
                             {graphicLayerItems}
                     </Select>
                 </FormControl>
