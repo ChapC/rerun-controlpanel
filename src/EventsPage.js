@@ -75,13 +75,13 @@ export function EventsPage(props) {
     }
 
     const showEditDialog = (event) => {
-        setEditorTarget(event);
+        setEditorTarget(JSON.parse(JSON.stringify(event)));
         setCreatingNewEvent(false);
         setShowEditor(true);
     }
 
     const showNewDialog = () => {
-        setEditorTarget(defaultEvent);
+        setEditorTarget(JSON.parse(JSON.stringify(defaultEvent)));
         setCreatingNewEvent(true);
         setShowEditor(true);
     }
