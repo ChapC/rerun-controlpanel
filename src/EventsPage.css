@@ -75,3 +75,39 @@
     padding: 5px 10px;
     box-sizing: border-box;
 }
+
+.eventEditorBody {
+    max-height: 350px;
+    width: 70vw;
+    min-width: 300px;
+    max-width: 500px;
+}
+
+.eventEditorBody > div {
+    height: 100%;
+}
+
+.eventEditorSplit {
+    margin-top: 10px;
+    display: flex;
+    width: 100%;
+    flex: 1;
+}
+
+.eventEditorDivider {
+    width: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.smallSelect {
+    margin: 0 5px !important;
+}
+
+.smallSelect > div {
+    height: 30px;
+ }
+
+.smallSelect > div > div {
+    margin-top: -15px !important;
+ }

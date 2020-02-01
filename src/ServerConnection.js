@@ -7,7 +7,9 @@ export class ServerConnection {
     heartbeat() {
         clearTimeout(this.heartBeatTimeout);
 
-        this.heartBeatTimeout = setTimeout(() => this.websocket.close(), 10000 + 1500); //Server ping frequency + 1.5s wiggle
+        this.heartBeatTimeout = setTimeout(() => this.websocket.close(), 5000 + 1500); //Server ping frequency + 1.5s wiggle
+
+        this.websocket.send('pong');
     }
 
     queuedForSend = [];
@@ -22,6 +24,7 @@ export class ServerConnection {
             for (let message of this.queuedForSend) {
                 this.websocket.send(message);
             }
+            this.queuedForSend = [];
 
             this.heartbeat();
         });

@@ -88,28 +88,34 @@ export function Dashboard(props) {
 
       if (onScreenBlock == null) {
         requestPlayerRefresh();
+      } else {
+        //Resume the timer if one isn't already in progress
+        if (currentProgressTimer == null) {
+          if (onScreenBlock.media.durationMs != null) {
+            currentProgressTimer = setInterval(() => setProgressMs(prevProgress => prevProgress + 500), 500);
+          }
+        }
       }
 
       return () => {
         server.removeMessageListener(listener)
         clearInterval(currentProgressTimer);
+        currentProgressTimer = null;
       };
     });
   
     const setNewPlayerState = (newState) => {
+      console.dir(newState);
       setOnScreenBlock(newState.currentBlock);
       setScheduleList(newState.queue);
       setProgressMs(newState.progressMs);
       setPauseReason(newState.pauseReason);
   
       //Reset the progress timer
-      if (currentProgressTimer != null) {
-        clearInterval(currentProgressTimer);
+      clearInterval(currentProgressTimer);
+      if (newState.currentBlock.media.durationMs != null) {
+        currentProgressTimer = setInterval(() => setProgressMs(prevProgress => prevProgress + 500), 500);
       }
-  
-      currentProgressTimer = setInterval(() => {
-        setProgressMs((prevProgress) => prevProgress + 500);
-      }, 500);
     }
 
   
