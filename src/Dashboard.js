@@ -72,6 +72,7 @@ const userStyles = makeStyles(theme => ({
 }));
 
 const nothingOnScreen = { media: { name: '-', durationMs: 0, location: {} } };
+const contentLoading = { media: { name: 'Loading...', durationMs: 0, location: {} } };
 
 const contentBlockTemplate = {
   colour: '#282482',
@@ -92,6 +93,7 @@ function millisToMinutesAndSeconds(millis) {
 }
 
 export function Dashboard(props) {
+  const [playbackState, setPlaybackState] = useState('Loading');
   const [onScreenBlock, setOnScreenBlock] = useState(null);
   const [scheduleList, setScheduleList] = useState([]);
   const [progressMs, setProgressMs] = useState(0);
@@ -125,6 +127,7 @@ export function Dashboard(props) {
   });
 
   const setNewPlayerState = (newState) => {
+    setPlaybackState(newState.playbackState);
     setOnScreenBlock(newState.currentBlock);
     setScheduleList(newState.queue);
     setProgressMs(newState.progressMs);
@@ -142,7 +145,7 @@ export function Dashboard(props) {
   const requestPlayerRefresh = () => {
     console.info('Requesting player state refresh...');
     server.request('playerRefresh').then((newPlayerState) => {
-      console.info('Received new player state');
+      console.info('Received new player state', newPlayerState);
       setNewPlayerState(newPlayerState);
     });
   }
@@ -234,19 +237,27 @@ export function Dashboard(props) {
   let scheduleStartTime = moment();
   let scheduleListLength = scheduleList ? scheduleList.length : 0;
   let playerPaused = (playerPauseReason != null);
-  if (onScreenBlock != null) {
-    onScreen = onScreenBlock;
-
-    if (onScreenBlock.media.durationMs != null) {
-      currentDuration = millisToMinutesAndSeconds(onScreenBlock.media.durationMs);
-      currentProgressMs = millisToMinutesAndSeconds(progressMs);
-      currentProgressBarValue = progressMs / onScreenBlock.media.durationMs * 100;
-      scheduleStartTime = scheduleStartTime.add(onScreenBlock.media.durationMs - progressMs, 'milliseconds');
-    } else {
-      //Infinite duration
-      currentDuration = currentProgressMs = '∞'
+  
+  if (playbackState === 'InBlock') {
+    if (onScreenBlock != null) {
+      onScreen = onScreenBlock;
+  
+      if (onScreenBlock.media.durationMs != null) {
+        currentDuration = millisToMinutesAndSeconds(onScreenBlock.media.durationMs);
+        currentProgressMs = millisToMinutesAndSeconds(progressMs);
+        currentProgressBarValue = progressMs / onScreenBlock.media.durationMs * 100;
+        scheduleStartTime = scheduleStartTime.add(onScreenBlock.media.durationMs - progressMs, 'milliseconds');
+      } else {
+        //Infinite duration
+        currentDuration = currentProgressMs = '∞'
+      }
     }
+  } else if (playbackState === 'Loading') {
+    onScreen = contentLoading;
+  } else if (playbackState === 'Error') {
+    
   }
+
 
   return (
     <div style={{ position: 'relative' }}>
@@ -276,7 +287,8 @@ export function Dashboard(props) {
               </div>
               <div className='currentProgressContainer'>
                 <Typography variant="subtitle1">{currentProgressMs}</Typography>
-                <LinearProgress variant="determinate" value={currentProgressBarValue} className={classes.fullLengthProgress} />
+                <LinearProgress variant={playbackState === 'Loading' ? "indeterminate" : "determinate"} 
+                    value={currentProgressBarValue} className={classes.fullLengthProgress} />
                 <Typography variant="subtitle1">{currentDuration}</Typography>
               </div>
             </div>
@@ -284,9 +296,9 @@ export function Dashboard(props) {
 
           <div className='onScreenActions'>
             <ButtonGroup color="primary" aria-label="outlined primary button group" className={classes.fullButtonGroup}>
-              <Button disabled={scheduleListLength < 1} className='flexButton' startIcon={<SkipNextIcon />} onClick={onNextBlockClicked}>Next block</Button>
+              <Button disabled={scheduleListLength < 1 || playbackState !== 'InBlock'} className='flexButton' startIcon={<SkipNextIcon />} onClick={onNextBlockClicked}>Next block</Button>
               <Button className='flexButton' startIcon={<StopIcon />} onClick={onStopClicked}>Stop to title</Button>
-              <Button className='flexButton' startIcon={<ReplayIcon />} onClick={onRestartClicked}>Restart playback</Button>
+              <Button disabled={playbackState !== 'InBlock'} className='flexButton' startIcon={<ReplayIcon />} onClick={onRestartClicked}>Restart playback</Button>
             </ButtonGroup>
           </div>
         </div>

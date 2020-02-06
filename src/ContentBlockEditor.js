@@ -13,12 +13,6 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 const colours = ['#282482', 'coral', '#f03232', 'limegreen', '#3382ff', '#f0e032', '#d332f0', '#ed4cc5'];
 
 export function ContentBlockEditor(props) {
-    const changeNumberProperty = (propertyName, newValue) => {
-        if (!isNaN(newValue)) {
-            props.onPropertyChange(propertyName, newValue);
-        }
-    }
-
     let mediaProperties = null;
     if (props.block.media.type === 'Local video file') {
         mediaProperties = <LocalVideoProperties media={props.block.media} setProperty={props.onPropertyChange} />
@@ -54,13 +48,13 @@ export function ContentBlockEditor(props) {
                             <Typography variant='subtitle2'>Media trimming</Typography>
                             <div style={{display: 'flex'}}>
                                 <FormControl>
-                                    <TextField label='Start trim' onChange={(ev) => {changeNumberProperty('playbackConfig.trimStartSec', ev.target.value)}}
-                                        variant='filled' value={props.block.playbackConfig.trimStartSec} />
+                                    <TextField label='Start trim' onChange={(ev) => {props.onPropertyChange('playbackConfig.trimStartSec', ev.target.value)}}
+                                        type='number' variant='filled' value={props.block.playbackConfig.trimStartSec} />
                                 </FormControl>
                                 <div style={{width: '10px'}}></div>
                                 <FormControl>
-                                    <TextField label='End trim' onChange={(ev) => {changeNumberProperty('playbackConfig.trimEndSec', ev.target.value)}}
-                                        variant='filled' value={props.block.playbackConfig.trimEndSec} />
+                                    <TextField label='End trim' onChange={(ev) => {props.onPropertyChange('playbackConfig.trimEndSec', ev.target.value)}}
+                                        type='number' variant='filled' value={props.block.playbackConfig.trimEndSec} />
                                 </FormControl>
                             </div>
                         </div>

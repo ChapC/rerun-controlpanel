@@ -88,7 +88,7 @@ export function EventsPage(props) {
 
     let cards = null;
     if (eventsList != null) {
-        if (eventsList.length == 0) {
+        if (eventsList.length === 0) {
             cards = (
                 <div className='centerFlex' style={{marginTop: '10px'}}>
                     <Typography>No events</Typography>
@@ -288,7 +288,6 @@ function EventCard(props) {
 }
 
 function EventEditorDialog(props) {
-    const classes = userStyles();
     const [graphicsPackages, setGraphicsPackages] = useState(null);
 
     useEffect(() => {
