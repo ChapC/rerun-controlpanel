@@ -66,7 +66,7 @@ export function Schedule(props) {
     //Convert the contentBlocks into ScheduleListItems
     let listItems = props.items.map((contentBlock, listIndex) => {
         let listItem = ( <ScheduleListItem media={contentBlock.media} id={contentBlock.id} colour={contentBlock.colour}
-                status={contentBlock.status} startTime={blockStartTime} onEditClicked={() => showBlockEditor(contentBlock)}
+                status={contentBlock.mediaStatus} startTime={blockStartTime} onEditClicked={() => showBlockEditor(contentBlock)}
                 index={listIndex} key={contentBlock.id} onDeleteClicked={() => onBlockDelete(listIndex)}/>
         );
                 
@@ -179,8 +179,14 @@ function MediaStatusIndicator(props) {
     } else if (props.status === 'Offline') {
         color = '#ff4242'
     }
+
+    let opacity = 1;
+    if (props.status === 'Untracked') {
+        opacity = 0;
+    }
+
     return (
-        <div className='mediaStatus' style={{backgroundColor: color}}>
+        <div className='mediaStatus' style={{backgroundColor: color, opacity: opacity}}>
             <Typography className='mediaStatusText' variant="caption" style={{fontWeight: 600}}>{props.status}</Typography>
         </div>
     )
