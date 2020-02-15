@@ -1,0 +1,33 @@
+.csEditorRoot {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 10px 0px;
+}
+
+.csEditorBody {
+    max-width: 800px;
+    width: 70vw;
+    min-width: 250px;
+}
+
+@media only screen and (max-width: 600px) {
+    .csEditorBody {
+        width: 90vw;
+    }
+}
+
+.fullWidthField > div {
+    width: 100%;
+    margin: 5px 0 !important;
+}
+
+.csEditorType {
+    display: flex;
+    align-items: center;
+}
+
+.csEditorType > .MuiTypography-subtitle2 {
+    margin-left: 5px;
+}

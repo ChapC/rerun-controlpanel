@@ -1,0 +1,50 @@
+.sectionHeader {
+    display: flex;
+    width: 100%;
+    align-items: center;
+}
+
+.sectionHeader > hr {
+    flex: 1;
+    margin-left: 10px;
+}
+
+.csCard {
+    width: 100%;
+    padding: 5px 10px;
+    box-sizing: border-box;
+    margin: 5px 0;
+}
+
+.csContainer {
+    display: flex;
+    justify-content: space-between;
+}
+
+.csAlert {
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+}
+
+.csAlertBox {
+    width: 100%;
+    border-radius: 5px;
+    padding: 0 5px;
+    margin-left: 5px;
+}
+
+.csAlertBox > .MuiTypography-h6 {
+    font-size: 1.2em;
+}
+
+.csAlertBox > .MuiTypography-subtitle1 {
+    font-size: 1em;
+}
+
+.csEditDelete {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+}
