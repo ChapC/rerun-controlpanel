@@ -6,7 +6,7 @@ import IconButton from '@material-ui/core/IconButton';
 import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import moment from 'moment';
-import { FullscreenModal } from './FullscreenModal';
+import FullscreenModal from './FullscreenModal';
 import { ContentBlockEditor } from './ContentBlockEditor';
 import './Schedule.css';
 
@@ -37,7 +37,7 @@ export function Schedule(props) {
       targetObject[targetPropertyName] = newValue;
 
       setContentBlockEditTarget(modifiedBlock);
-  }
+    }
 
     let blockStartTime = moment(props.startTime);
     

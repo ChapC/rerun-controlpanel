@@ -10,7 +10,7 @@ import AlarmIcon from '@material-ui/icons/Alarm';
 import EditIcon from '@material-ui/icons/Edit';
 import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
 import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
-import { BoltIcon } from './res/BoltIcon';
+import { BoltIcon } from '../res/BoltIcon';
 import Dialog from '@material-ui/core/Dialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import DialogContent from '@material-ui/core/DialogContent';
@@ -24,7 +24,6 @@ import FormControl from '@material-ui/core/FormControl';
 import Divider from '@material-ui/core/Divider';
 import Select from '@material-ui/core/Select';
 import FormGroup from '@material-ui/core/FormGroup';
-
 
 const userStyles = makeStyles(theme => ({
     eventTitle: {
@@ -375,7 +374,7 @@ function EventEditorDialog(props) {
                 //If the layer has the duration for an 'in' animation defined, use that as the GraphicAction's animInTime
                 if (graphicLayerMap[layerName] && graphicLayerMap[layerName].animationTimings) {
                     let inTime = graphicLayerMap[layerName].animationTimings.in;
-                    if (inTime != undefined) {
+                    if (inTime !== undefined) {
                         props.onPropertyChange('action.animInTime', inTime);
                     }
                 }

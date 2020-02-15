@@ -8,10 +8,11 @@ import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import Drawer from '@material-ui/core/Drawer';
 import ServerConnection from './ServerConnection';
-import {Dashboard} from './Dashboard';
+import {Dashboard} from './pages/Dashboard';
 import {SideNavList} from './SideNavList';
 import { Route, Switch } from "react-router-dom";
-import {EventsPage} from './EventsPage';
+import {EventsPage} from './pages/EventsPage';
+import {ContentSourcesPage} from './pages/ContentSourcesPage';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -75,7 +76,7 @@ function ControlPanel() {
                 <EventsPage server={server} />
               </Route>
               <Route exact path='/sources'>
-                <h1>Content sources</h1>
+                <ContentSourcesPage server={server} />
               </Route>
               <Route exact path='/settings'>
                 <h1>Settings</h1>

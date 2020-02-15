@@ -18,10 +18,10 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-import { Schedule } from './Schedule';
+import { Schedule } from '../Schedule';
 import moment from 'moment';
-import { FullscreenModal } from './FullscreenModal';
-import { ContentBlockEditor } from './ContentBlockEditor';
+import FullscreenModal from '../FullscreenModal';
+import { ContentBlockEditor } from '../ContentBlockEditor';
 
 const userStyles = makeStyles(theme => ({
   root: {

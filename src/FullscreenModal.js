@@ -6,7 +6,7 @@ import IconButton from '@material-ui/core/IconButton';
 import ReactDOM from "react-dom";
 import './FullscreenModal.css';
 
-export function FullscreenModal(props) {
+export default function FullscreenModal(props) {
     let containerStyle = {transform: 'translateY(100%)'};
     if (props.show) {
         containerStyle = {transform: 'translateY(0%)'}
