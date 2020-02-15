@@ -22,6 +22,11 @@ import { Schedule } from '../Schedule';
 import moment from 'moment';
 import FullscreenModal from '../FullscreenModal';
 import { ContentBlockEditor } from '../ContentBlockEditor';
+import Dialog from '@material-ui/core/Dialog';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import { friendlySourceTypes } from './ContentSourcesPage';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -230,6 +235,25 @@ export function Dashboard(props) {
     setShowAddBlockMenu(true);
   }
 
+  const [showSourceSelect, setShowSourceSelect] = useState(false);
+  const [sourceList, setSourceList] = useState([]);
+  const openSourceSelect = (event) => {
+    setShowAddBlockMenu(false);
+    server.request('getContentSources').then((sources) => {
+      setSourceList(sources);
+      setShowSourceSelect(true);
+    });
+  }
+
+  const pullFromContentSource = (sourceId) => {
+    server.request('pullFromContentSource', { sourceId: sourceId }).then(() => {
+      setShowSourceSelect(false);
+    }).catch((error) => {
+      window.alert(error.message);
+      setShowSourceSelect(false);
+    });
+  }
+
   let onScreen = nothingOnScreen;
   let currentDuration = '0:00';
   let currentProgressMs = '0:00';
@@ -318,7 +342,7 @@ export function Dashboard(props) {
               </ListItemIcon>
               <Typography variant='inherit' noWrap>Create new block</Typography>
             </MenuItem>
-            <MenuItem onClick={() => setShowAddBlockMenu(false)}>
+            <MenuItem onClick={openSourceSelect}>
               <ListItemIcon>
                 <DynamicFeedIcon />
               </ListItemIcon>
@@ -329,6 +353,27 @@ export function Dashboard(props) {
 
         <Schedule items={scheduleList} startTime={scheduleStartTime} onListUpdate={onScheduleListChange}
           server={server} style={{ width: '100%', minHeight: '100px', maxHeight: '50vh' }} />
+
+        <Dialog onClose={() => setShowSourceSelect(false)} open={showSourceSelect}>
+          <DialogTitle>Pull from content source</DialogTitle>
+          <List>
+            {sourceList.map((source) => {
+              let type = friendlySourceTypes[source.type];
+              if (type == null) {
+                type = source.type;
+              }
+
+              return (
+                <ListItem button key={source.id} onClick={() => pullFromContentSource(source.id)}>
+                  <div style={{display: 'flex', flexDirection: 'column'}}>
+                    <Typography variant='subtitle1'>{source.name}</Typography>
+                    <Typography variant='subtitle2'>{type}</Typography>
+                  </div>
+                </ListItem>
+              );
+            })}
+          </List>
+        </Dialog>
 
         <FullscreenModal title={'Create content block'} onSubmit={onBlockEditorSubmit}
           show={showCreateBlockEditor} onCancel={() => setShowCreateBlockEditor(false)}>
