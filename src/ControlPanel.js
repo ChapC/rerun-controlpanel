@@ -57,7 +57,7 @@ function ControlPanel() {
               <IconButton edge="start" className={classes.menuButton} onClick={() => setDrawerOpen(true)} color="inherit" aria-label="menu">
                 <MenuIcon />
               </IconButton>
-              <Typography variant="h6" className={classes.title}>
+              <Typography variant="h6" className={classes.title} onClick={() => setDrawerOpen(true)} style={{cursor:'pointer'}}>
                 {appBarTitle(location.pathname)}
               </Typography>
             </Toolbar>

@@ -89,6 +89,20 @@ const contentBlockTemplate = {
   }
 }
 
+const friendlyLocationTypes = {
+  'GraphicsLayer': 'Graphics package',
+  'LocalFile' : 'On disk',
+  'WebStream': 'Web stream'
+}
+
+function friendlyLocationOrDefault(location) {
+  let friendly = friendlyLocationTypes[location];
+  if (friendly == null) {
+    friendly = location;
+  }
+  return friendly;
+}
+
 let currentProgressTimer = null;
 
 function millisToMinutesAndSeconds(millis) {
@@ -250,6 +264,7 @@ export function Dashboard(props) {
       setShowSourceSelect(false);
     }).catch((error) => {
       window.alert(error.message);
+      console.dir(error.message);
       setShowSourceSelect(false);
     });
   }
@@ -305,7 +320,7 @@ export function Dashboard(props) {
                   <Typography variant="subtitle2">{onScreen.media.type}</Typography>
                   <Divider orientation='vertical' className={classes.vDivider}></Divider>
                   <Typography variant="subtitle2" className={classes.subDetailTitle}>Source:</Typography>
-                  <Typography variant="subtitle2">{onScreen.media.location.type}</Typography>
+                  <Typography variant="subtitle2">{friendlyLocationOrDefault(onScreen.media.location.contentType)}</Typography>
                 </div>
                 <div className='flexSpacer'></div>
               </div>
@@ -329,8 +344,8 @@ export function Dashboard(props) {
       </Card>
 
       <div>
-        <div style={{ display: 'flex', width: '100%', alignItems: 'center' }}>
-          <Typography variant="h6" noWrap>Queue</Typography>
+        <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginBottom: '10px' }}>
+          <Typography variant="h5" noWrap>Queue</Typography>
           <Divider style={{ flex: 1, margin: '0 10px' }} />
           <Button variant='outlined' size='small' startIcon={<AddIcon />} onClick={openAddBlockMenu}>
             Add content block
@@ -352,7 +367,7 @@ export function Dashboard(props) {
         </div>
 
         <Schedule items={scheduleList} startTime={scheduleStartTime} onListUpdate={onScheduleListChange}
-          server={server} style={{ width: '100%', minHeight: '100px', maxHeight: '50vh' }} />
+          server={server} style={{ width: '100%', minHeight: '65px', maxHeight: '50vh' }} />
 
         <Dialog onClose={() => setShowSourceSelect(false)} open={showSourceSelect}>
           <DialogTitle>Pull from content source</DialogTitle>

@@ -5,3 +5,21 @@ body {
 #pageContent {
   margin: 10px;
 }
+
+@media only screen and (min-width: 800px) {
+  #pageContent {
+    margin: 10px 5vw;
+  }
+}
+
+@media only screen and (min-width: 1200px) {
+  #pageContent {
+    margin: 10px 15vw;
+  }
+}
+
+@media only screen and (min-width: 1600px) {
+  #pageContent {
+    margin: 10px 20vw;
+  }
+}
