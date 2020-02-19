@@ -26,7 +26,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import { Checkbox } from '@material-ui/core';
 
 const emptyContentSource = {
-    name: 'New content source'
+    name: '', type: 'LocalDirectory'
 }
 
 const PurpleSwitch = withStyles({
@@ -76,9 +76,17 @@ export function ContentSourcesPage(props) {
         });
     });
 
+    const deleteSource = (sourceId) => {
+        server.request('deleteContentSource', { sourceId: sourceId })
+        .catch((error) => console.error(error));
+    }
+
     let sourceList; 
     if (contentSources != null) {
-        sourceList = contentSources.map((cs) => (<ContentSourceItem source={cs} key={cs.id} server={props.server} />));
+        sourceList = contentSources.map((cs) => (
+            <ContentSourceItem source={cs} key={cs.id} 
+                server={props.server} onDelete={() => deleteSource(cs.id)} />
+        ));
     }
 
     const changeAutoPoolOptions = (property, value) => {
@@ -97,7 +105,7 @@ export function ContentSourcesPage(props) {
 
     const isSourceInPool = (sourceId) => {
         for (let i = 0; i < sourcesInPool.length; i++) {
-            if (sourcesInPool[i].id === sourceId) {
+            if (sourcesInPool[i] != null && sourcesInPool[i].id === sourceId) {
                 return true;
             }
         }
@@ -114,6 +122,40 @@ export function ContentSourcesPage(props) {
                 <ListItemText primary={source.name} />
             </ListItem>
         ));
+    }
+
+    //New content source creator
+    const [showEditor, setShowEditor] = useState(null);
+    const [editorTarget, setEditorTarget] = useState(emptyContentSource);
+
+    const openNewSourceEditor = () => {
+        setEditorTarget(emptyContentSource);
+        setShowEditor(true);
+    }
+
+    const onSourceSubmit = () => {
+        props.server.request('newContentSource', { newSource: editorTarget }).then(() => {
+            setShowEditor(false);
+        }).catch(error => {
+            console.error('Create content source failed', error);
+            alert('Error from server:\n' + error.message);
+        });
+    }
+
+    const onSourceEditChange = (changedProperty, newValue) => {
+        //Changedproperty supports setting object members with the syntax 'object.child.targetproperty'
+        let objectNames = changedProperty.split('.');
+        let targetPropertyName = objectNames.splice(-1, 1)[0];
+  
+        let modifiedSource = Object.assign({}, editorTarget);
+  
+        let targetObject = modifiedSource;
+        for (let objectName of objectNames) {
+            targetObject = targetObject[objectName];
+        }
+        targetObject[targetPropertyName] = newValue;
+  
+        setEditorTarget(modifiedSource);
     }
 
     return (
@@ -163,19 +205,25 @@ export function ContentSourcesPage(props) {
                 <div style={{ display: 'flex', width: '100%', alignItems: 'center', marginTop: '10px' }}>
                     <Typography variant='h5' noWrap>All sources</Typography>
                     <Divider style={{ flex: 1, margin: '0 10px' }} />
-                    <Button variant='outlined' size='small' startIcon={<AddIcon />}>New source</Button>
+                    <Button variant='outlined' onClick={openNewSourceEditor} size='small' startIcon={<AddIcon />}>New source</Button>
                 </div>
 
                 <div>
                     {sourceList}
                 </div>
             </div>
+
+            <FullscreenModal title={'New content source'} onSubmit={onSourceSubmit}
+                show={showEditor} onCancel={() => setShowEditor(false)}>
+                <ContentSourceEditor source={editorTarget} setProperty={onSourceEditChange} creatingNew />
+            </FullscreenModal>
         </div>
     );
 }
 
 export const friendlySourceTypes = {
-    'LocalDirectory': 'Local folder'
+    'LocalDirectory': 'Local folder',
+    'YTChannel' : 'Youtube channel'
 }
 
 function ContentSourceItem(props) {

@@ -36,7 +36,7 @@ function ControlPanel() {
 
   //ServerConnection setup
   if (server == null) {
-    setServer(new ServerConnection('ws://192.168.0.122:8080/controlWS'));
+    setServer(new ServerConnection('ws://' + window.location.hostname + ':8080/controlWS'));
   }
 
   const appBarTitle = (path) => {
