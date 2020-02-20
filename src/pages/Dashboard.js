@@ -27,6 +27,7 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import { friendlySourceTypes } from './ContentSourcesPage';
+import IntervalMillisCounter from './../IntervalMillisCounter';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -103,13 +104,12 @@ function friendlyLocationOrDefault(location) {
   return friendly;
 }
 
-let currentProgressTimer = null;
-
 function millisToMinutesAndSeconds(millis) {
   var minutes = Math.floor(millis / 60000);
-  var seconds = ((millis % 60000) / 1000).toFixed(0);
+  var seconds = Math.floor((millis / 1000) % 60);
   return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
 }
+const currentProgressTimer = new IntervalMillisCounter(500);
 
 export function Dashboard(props) {
   const [playbackState, setPlaybackState] = useState('Loading');
@@ -121,6 +121,7 @@ export function Dashboard(props) {
   const [showAddBlockMenu, setShowAddBlockMenu] = useState(false);
 
   const server = props.server;
+  currentProgressTimer.callback = (newTime) => setProgressMs(newTime);
 
   useEffect(() => {
     const listener = server.addMessageListener('setPlayerState', (messageData) => {
@@ -130,18 +131,12 @@ export function Dashboard(props) {
     if (onScreenBlock == null) {
       requestPlayerRefresh();
     } else {
-      //Resume the timer if one isn't already in progress
-      if (currentProgressTimer == null) {
-        if (onScreenBlock.media.durationMs != null) {
-          currentProgressTimer = setInterval(() => setProgressMs(prevProgress => prevProgress + 500), 500);
-        }
-      }
+      currentProgressTimer.start(progressMs);
     }
-
+    
     return () => {
-      server.removeMessageListener(listener)
-      clearInterval(currentProgressTimer);
-      currentProgressTimer = null;
+      server.removeMessageListener(listener);
+      currentProgressTimer.stop();
     };
   });
 
@@ -153,9 +148,10 @@ export function Dashboard(props) {
     setPauseReason(newState.pauseReason);
 
     //Reset the progress timer
-    clearInterval(currentProgressTimer);
     if (newState.currentBlock.media.durationMs != null) {
-      currentProgressTimer = setInterval(() => setProgressMs(prevProgress => prevProgress + 500), 500);
+      currentProgressTimer.start(newState.progressMs);
+    } else {
+      currentProgressTimer.stop();
     }
   }
 
