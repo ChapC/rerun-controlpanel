@@ -3,7 +3,7 @@ import FormControl from '@material-ui/core/FormControl';
 import TextField from '@material-ui/core/TextField';
 import './ContentSourceEditor.css';
 import { Typography } from '@material-ui/core';
-import { friendlySourceTypes } from './pages/ContentSourcesPage';
+import { friendlySourceTypes } from '../../pages/ContentSourcesPage';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import MenuItem from '@material-ui/core/MenuItem';

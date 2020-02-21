@@ -18,16 +18,16 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import Menu from '@material-ui/core/Menu';
 import MenuItem from '@material-ui/core/MenuItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
-import { Schedule } from '../Schedule';
+import { Schedule } from '../components/Schedule';
 import moment from 'moment';
-import FullscreenModal from '../FullscreenModal';
-import { ContentBlockEditor } from '../ContentBlockEditor';
+import FullscreenModal from '../components/FullscreenModal';
+import { ContentBlockEditor } from '../components/editors/ContentBlockEditor';
 import Dialog from '@material-ui/core/Dialog';
 import DialogTitle from '@material-ui/core/DialogTitle';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import { friendlySourceTypes } from './ContentSourcesPage';
-import IntervalMillisCounter from './../IntervalMillisCounter';
+import IntervalMillisCounter from '../helpers/IntervalMillisCounter';
 
 const userStyles = makeStyles(theme => ({
   root: {

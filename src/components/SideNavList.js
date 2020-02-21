@@ -9,7 +9,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import HomeIcon from '@material-ui/icons/Home';
 import DynamicFeedIcon from '@material-ui/icons/DynamicFeed';
 import SettingsInputCompositeIcon from '@material-ui/icons/SettingsInputComposite';
-import { BoltIcon } from './res/BoltIcon';
+import { BoltIcon } from '../res/BoltIcon';
 
 export function SideNavList(props) {
     const listItemStyle = [];

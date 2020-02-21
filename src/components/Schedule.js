@@ -7,7 +7,7 @@ import DeleteIcon from '@material-ui/icons/Delete';
 import EditIcon from '@material-ui/icons/Edit';
 import moment from 'moment';
 import FullscreenModal from './FullscreenModal';
-import { ContentBlockEditor } from './ContentBlockEditor';
+import { ContentBlockEditor } from './editors/ContentBlockEditor';
 import './Schedule.css';
 
 const contentBlockTemplate = {
