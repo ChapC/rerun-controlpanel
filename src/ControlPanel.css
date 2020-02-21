@@ -6,6 +6,40 @@ body {
   margin: 10px;
 }
 
+#connectOverlay {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  background-color: #ededed;
+  top: 0;
+  justify-content: center;
+  align-items: center;
+  z-index: 5;
+}
+
+#connectOverlay > .MuiCircularProgress-root {
+  margin: 15px;
+}
+
+#connectText {
+  font-size: 2em;
+}
+
+#coError {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#coError > h3 {
+  margin: 15px 0;
+}
+
+#coError > .MuiSvgIcon-root {
+  font-size: 20vh;
+  opacity: 0.5;
+}
+
 @media only screen and (min-width: 800px) {
   #pageContent {
     margin: 10px 5vw;

@@ -27,6 +27,7 @@ export class ServerConnection {
             this.queuedForSend = [];
 
             this.heartbeat();
+            this.onOpenCallbacks.forEach(callback => callback());
         });
         this.websocket.addEventListener('message', (event) => {
             if (event.data === 'ping') {
@@ -65,7 +66,19 @@ export class ServerConnection {
         this.websocket.addEventListener('close', () => {
             clearTimeout(this.heartBeatTimeout);
             console.error('Lost websocket connection to Rerun server');
+            this.onCloseCallbacks.forEach(callback => callback());
         });
+    }
+
+    onOpenCallbacks = [];
+    onCloseCallbacks = [];
+
+    onOpen(callback) {
+        this.onOpenCallbacks.push(callback);
+    }
+
+    onClose(callback) {
+        this.onCloseCallbacks.push(callback);
     }
 
     listenerIdCounter = 0;

@@ -13,6 +13,10 @@ import {SideNavList} from './SideNavList';
 import { Route, Switch } from "react-router-dom";
 import {EventsPage} from './pages/EventsPage';
 import {ContentSourcesPage} from './pages/ContentSourcesPage';
+import SettingsPage from './pages/SettingsPage';
+import CircularProgress from '@material-ui/core/CircularProgress';
+import ErrorOutlineIcon from '@material-ui/icons/ErrorOutline';
+import Button from '@material-ui/core/Button';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -33,10 +37,27 @@ function ControlPanel() {
   const classes = userStyles();
   const [server, setServer] = useState(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [showConnectOverlay, setShowConnectOverlay] = useState(true);
+  const [disconnected, setDisconnected] = useState(false);
 
   //ServerConnection setup
+  const connect = () => {
+    console.info('Connecting to Rerun server...');
+    setDisconnected(false);
+    
+    const serverConn = new ServerConnection('ws://' + window.location.hostname + ':8080/controlWS');
+    serverConn.onOpen(() => {
+      setShowConnectOverlay(false);
+    });
+    serverConn.onClose(() => {
+      setShowConnectOverlay(true);
+      setDisconnected(true);
+    });
+    setServer(serverConn);
+  }
+
   if (server == null) {
-    setServer(new ServerConnection('ws://' + window.location.hostname + ':8080/controlWS'));
+    connect();
   }
 
   const appBarTitle = (path) => {
@@ -79,14 +100,37 @@ function ControlPanel() {
                 <ContentSourcesPage server={server} />
               </Route>
               <Route exact path='/settings'>
-                <h1>Settings</h1>
+                <SettingsPage server={server} />
               </Route>
             </Switch>
           </div>
+
+          <ConnectOverlay show={showConnectOverlay} failed={disconnected} onReconnectClicked={() => window.location.reload()} />
         </div>
       )}
     </Route>
   );
+}
+
+function ConnectOverlay(props) {
+  if (!props.failed) {
+    return (
+      <div id='connectOverlay' style={{display: props.show ? 'flex' : 'none'}}>
+        <CircularProgress />
+        <Typography variant='h3' id='connectText'>Connecting to Rerun</Typography>
+      </div>
+    );
+  } else {
+    return (
+      <div id='connectOverlay' style={{display: props.show ? 'flex' : 'none'}}>
+        <div id='coError'>
+          <ErrorOutlineIcon />
+          <Typography variant='h3' id='connectText'>Lost connection to Rerun</Typography>
+          <Button variant='outlined' onClick={props.onReconnectClicked}>Try reconnect</Button>
+        </div>
+      </div>
+    );
+  }
 }
 
 export default ControlPanel;
