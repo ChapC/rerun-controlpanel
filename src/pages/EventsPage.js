@@ -11,19 +11,11 @@ import EditIcon from '@material-ui/icons/Edit';
 import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
 import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
 import { BoltIcon } from '../res/BoltIcon';
-import Dialog from '@material-ui/core/Dialog';
-import DialogActions from '@material-ui/core/DialogActions';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogTitle from '@material-ui/core/DialogTitle';
+import FullscreenModal from '../components/FullscreenModal';
+import FormGroupEditor from '../components/editors/FormGroupEditor';
+import { formOutlineToProperties, formPropertiesToValues } from '../components/FormGroup';
 import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import InputLabel from '@material-ui/core/InputLabel';
-import MenuItem from '@material-ui/core/MenuItem';
 import AddIcon from '@material-ui/icons/Add';
-import FormControl from '@material-ui/core/FormControl';
-import Divider from '@material-ui/core/Divider';
-import Select from '@material-ui/core/Select';
-import FormGroup from '@material-ui/core/FormGroup';
 
 const userStyles = makeStyles(theme => ({
     eventTitle: {
@@ -34,53 +26,100 @@ const userStyles = makeStyles(theme => ({
     }
 }));
 
-const defaultEvent = {
-    event: {
-        type: 'Player', targetPlayerEvent: 'start', eventOffset: 3000,
-        frequency: 1, name: 'New event', action: {}
+const customFormNames = (targetEvent) => {
+    let eventOffsetTitle = "Offset";
+    if (targetEvent.event && targetEvent.event.logic && targetEvent.event.logic.targetPlayerEvent) {
+        if (targetEvent.event.logic.targetPlayerEvent.value === "Start of block") {
+            eventOffsetTitle = "Seconds after start";
+        } else if (targetEvent.event.logic.targetPlayerEvent.value === "End of block") {
+            eventOffsetTitle = "Seconds before end";
+        } else if (targetEvent.event.logic.targetPlayerEvent.value === "Inbetween blocks") {
+            eventOffsetTitle = "Inbetween pause seconds";
+        }
     }
+
+    return (
+        [
+            {key: "logic.eventOffsetSecs", name: eventOffsetTitle},
+            {key: "logic", name: "Event options", placeAfter: "logicType"},
+            {key: "action", placeAfter: "actionType"}
+        ]
+    );
 };
+
+//Convert the events from FormProperties to just their values
+const eventListToValueList = (formPropertyList) => {
+    let valueEvents = []; 
+    formPropertyList.map((formEvent) => {
+        let valuesOnly = { ...formEvent };
+        valuesOnly.event = formPropertiesToValues(formEvent.event);
+        valueEvents.push(valuesOnly);
+    })
+    return valueEvents;
+}
 
 export function EventsPage(props) {
     const server = props.server;
-    const [eventsList, setEventsList] = useState(null);
-    const [editorTarget, setEditorTarget] = useState(defaultEvent);
+    const [eventOutline, setEventOutline] = useState(null); //The form outline of an event, used when creating events from scratch
+    const [eventsList, setEventsList] = useState(null); //Events converted from forms to just values
+    const [eventsFormList, setEventsFormList] = useState([]); //Events as forms, as they come from the server
+    const [editorTarget, setEditorTarget] = useState({}); //The event currently being worked on in the editor
     const [showEditor, setShowEditor] = useState(false);
     const [creatingNewEvent, setCreatingNewEvent] = useState(false);
 
     useEffect(() => {
         if (eventsList == null) {
             server.request('getEvents').then((events) => {
-                setEventsList(events);
-                console.dir(events);
+                setEventsList(eventListToValueList(events));
+                setEventsFormList(events);
             }).catch(error => {
                 console.error('Failed to fetch events:', error);
             });
         }
 
-        const listener = server.addMessageListener('setEventList', (newEventList) => setEventsList(newEventList));
+        if (eventOutline == null) {
+            //Grab the outline for a UserEvent object from the server
+            setEventOutline({});
+            server.request('getEventOutline').then((eventOutline) => {
+                setEventOutline(eventOutline);
+            });
+        }
+
+        const listener = server.addMessageListener('setEventList', (newEventList) => {
+            setEventsList(eventListToValueList(newEventList));
+            setEventsFormList(newEventList);
+        });
 
         return () => server.removeMessageListener(listener);
     });
 
     const onSetEventEnabled = (eventId, isEnabled) => {
-        server.request('setEventEnabled', {eventId: eventId, enabled: isEnabled})
+        server.request('setEventEnabled', { eventId: eventId, enabled: isEnabled })
             .catch((error) => console.error('Failed to set event enabled: ', error));
     }
 
     const deleteEvent = (eventId) => {
-        server.request('deleteEvent', {eventId: eventId})
+        server.request('deleteEvent', { eventId: eventId })
             .catch((error) => console.error('Failed to delete event:', error));
     }
 
-    const showEditDialog = (event) => {
-        setEditorTarget(JSON.parse(JSON.stringify(event)));
+    const showEditDialog = (eventID) => {
+        //Find the target event form in eventsFormList
+        let targetEvent = null;
+        for (let e of eventsFormList) {
+            if (e.id == eventID) {
+                targetEvent = e;
+                break;
+            }
+        }
+
+        setEditorTarget(JSON.parse(JSON.stringify(targetEvent)));
         setCreatingNewEvent(false);
         setShowEditor(true);
     }
 
-    const showNewDialog = () => {
-        setEditorTarget(JSON.parse(JSON.stringify(defaultEvent)));
+    const showNewEventEditor = () => {
+        setEditorTarget({id: undefined, enabled: undefined, event: formOutlineToProperties(eventOutline)});
         setCreatingNewEvent(true);
         setShowEditor(true);
     }
@@ -89,15 +128,15 @@ export function EventsPage(props) {
     if (eventsList != null) {
         if (eventsList.length === 0) {
             cards = (
-                <div className='centerFlex' style={{marginTop: '10px'}}>
+                <div className='centerFlex' style={{ marginTop: '10px' }}>
                     <Typography>No events</Typography>
                 </div>
             );
         } else {
             cards = eventsList.map((tEvent, index) => (
-                <EventCard event={tEvent.event} enabled={tEvent.enabled} 
-                    onSetEnabled={(enabled) => onSetEventEnabled(tEvent.id, enabled)} 
-                    onEditClicked={() => showEditDialog(tEvent)}
+                <EventCard event={tEvent.event} enabled={tEvent.enabled}
+                    onSetEnabled={(enabled) => onSetEventEnabled(tEvent.id, enabled)}
+                    onEditClicked={() => showEditDialog(tEvent.id)}
                     onDeleteClicked={() => deleteEvent(tEvent.id)}
                     key={'eventcard' + tEvent.id} />
             ))
@@ -115,22 +154,36 @@ export function EventsPage(props) {
         for (let objectName of objectNames) {
             targetObject = targetObject[objectName];
         }
-        targetObject[targetPropertyName] = newValue;
+        targetObject[targetPropertyName].value = newValue;
 
         let eventContainer = {
             id: editorTarget.id, enabled: editorTarget.enabled,
             event: modifiedEvent
         }
 
+        //If the event type was changed, fetch the outline for the new type
+        if (changedProperty === 'logicType') {
+            server.request('getEventLogicOutline', {eventType: newValue}).then((logicOutline) => {
+                editorTarget.event.logic = formOutlineToProperties(logicOutline);
+                setEditorTarget(editorTarget);
+            });
+        } else if (changedProperty === 'actionType') {
+            server.request('getEventActionOutline', {actionType: newValue}).then((actionOutline) => {
+                editorTarget.event.action = formOutlineToProperties(actionOutline);
+                setEditorTarget(editorTarget);
+            });
+        }
+
         setEditorTarget(eventContainer);
     }
 
     const eventEditorSubmit = () => {
+        //Submit the current editorTarget
         if (creatingNewEvent) {
+            console.info('Submitting event ', editorTarget.event);
             server.request('createEvent', editorTarget.event).then(() => setShowEditor(false));
         } else {
-            //Submit the current editorTarget
-            server.request('updateEvent', {eventId: editorTarget.id, newEvent: editorTarget.event}).then(() => {
+            server.request('updateEvent', { eventId: editorTarget.id, newEvent: editorTarget.event }).then(() => {
                 setShowEditor(false);
             });
         }
@@ -138,16 +191,14 @@ export function EventsPage(props) {
 
     return (
         <div>
-            <Button variant='outlined' startIcon={<AddIcon />} onClick={showNewDialog} style={{width: '100%'}}>Create event</Button>
+            <Button variant='outlined' startIcon={<AddIcon />} onClick={showNewEventEditor} style={{ width: '100%' }}>Create event</Button>
             <div className='eventCardGrid'>
                 {cards}
             </div>
 
-            <Dialog open={showEditor} onClose={() => setShowEditor(false)}>
-                <EventEditorDialog event={editorTarget.event} onPropertyChange={onEventEditorChange} 
-                    isNewEvent={creatingNewEvent} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}
-                    server={server} />
-            </Dialog>
+            <FullscreenModal show={showEditor} title={creatingNewEvent ? 'New event' : 'Edit event'} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}>
+                <FormGroupEditor properties={editorTarget.event} onPropertyChange={onEventEditorChange} customNames={customFormNames(editorTarget)} />
+            </FullscreenModal>
         </div>
     );
 }
@@ -179,7 +230,7 @@ function EventCard(props) {
     const classes = userStyles();
     const mEvent = props.event;
 
-    let eventTypeText = props.event.type + ' event';
+    let eventTypeText = mEvent.logicType + ' event';
 
     //Default event descriptions
     let eventDescription = (<div className='flexCenter backgroundText'><Typography variant='subtitle1'>[Custom event]</Typography></div>)
@@ -187,51 +238,51 @@ function EventCard(props) {
     let actionName = 'Run a server action';
 
     //Use the action renderer for this event's action type
-    if (mEvent.action.type === 'GraphicEvent') {
+    if (mEvent.actionType === 'Show a graphic') {
         actionName = 'Play a graphic';
         let waitTime = null;
         let outEvent = null;
-        if (mEvent.type === 'Player' && mEvent.targetPlayerEvent === 'inbetween' && mEvent.action.eventOffset !== 0) {
-            let waitSeconds = mEvent.eventOffset / 1000;
+        if (mEvent.logicType === 'Player' && mEvent.logic.targetPlayerEvent === 'inbetween' && mEvent.logic.eventOffsetSecs !== 0) {
+            let waitSeconds = mEvent.logic.eventOffsetSecs;
             waitTime = (
-                <div style={{alignItems:'center'}}>
+                <div style={{ alignItems: 'center' }}>
                     <Typography variant='subtitle2'>Pause {waitSeconds} second{waitSeconds !== 1 ? 's' : ''}</Typography>
                 </div>
             );
             outEvent = (
-                <div style={{alignItems:'center'}}>
-                    <DoubleArrowIcon style={{transform: 'scaleX(-1)'}} />
-                    <Typography variant='subtitle2'>{mEvent.action.targetLayer}</Typography>
+                <div style={{ alignItems: 'center' }}>
+                    <DoubleArrowIcon style={{ transform: 'scaleX(-1)' }} />
+                    <Typography variant='subtitle2'>{mEvent.action.targetLayerName}</Typography>
                 </div>
             );
         }
 
         actionDescription = (
             <div className='playerEventDescription'>
-                <div style={{alignItems:'center'}}>
+                <div style={{ alignItems: 'center' }}>
                     <DoubleArrowIcon />
-                    <Typography variant='subtitle2'>{mEvent.action.targetLayer}</Typography>
+                    <Typography variant='subtitle2'>{mEvent.action.targetLayerName}</Typography>
                 </div>
                 {waitTime}
                 {outEvent}
             </div>
         );
     }
-    
+
     //Use the description renderer for this type of event
-    if (mEvent.type === 'Player') {
+    if (mEvent.logicType === 'Player') {
         let relTimeQualifier = 'Inbetween the blocks';
-        if (mEvent.targetPlayerEvent === 'start') {
-            if (mEvent.eventOffset === 0) {
+        if (mEvent.logic.targetPlayerEvent === 'Start of block') {
+            if (mEvent.logic.eventOffsetSecs === 0) {
                 relTimeQualifier = 'At the start'
             } else {
-                relTimeQualifier = (mEvent.eventOffset / 1000) + 's after the start'
+                relTimeQualifier = mEvent.logic.eventOffsetSecs + 's after the start'
             }
-        } else if (mEvent.targetPlayerEvent === 'end') {
-            if (mEvent.eventOffset === 0) {
+        } else if (mEvent.logic.targetPlayerEvent === 'End of block') {
+            if (mEvent.logic.eventOffsetSecs === 0) {
                 relTimeQualifier = 'At the end'
             } else {
-                relTimeQualifier = (mEvent.eventOffset / 1000) + 's before the end'
+                relTimeQualifier = mEvent.logic.eventOffsetSecs + 's before the end'
             }
         }
         eventDescription = (
@@ -239,7 +290,7 @@ function EventCard(props) {
                 <div>
                     <PlayCircleOutlineIcon className='playerEventIcon' />
                     <Typography>
-                        Every {mEvent.frequency === 1 ? '' : mEvent.frequency + nth(mEvent.frequency) + ' '}block
+                        Every {mEvent.logic.frequency === 1 ? '' : mEvent.logic.frequency + nth(mEvent.logic.frequency) + ' '}block
                     </Typography>
                 </div>
                 <div>
@@ -248,7 +299,7 @@ function EventCard(props) {
                 </div>
                 <div>
                     <BoltIcon className='playerEventIcon' />
-                    <div style={{width: '100%'}}>
+                    <div style={{ width: '100%' }}>
                         <Typography>{actionName}</Typography>
                         <div className='playerEventActionContainer'>
                             {actionDescription}
@@ -261,7 +312,7 @@ function EventCard(props) {
 
     let bodyStyle = {};
     if (!props.enabled) {
-        bodyStyle = {userSelect: 'none', opacity: 0.5};
+        bodyStyle = { userSelect: 'none', opacity: 0.5 };
     }
 
     return (
@@ -283,167 +334,5 @@ function EventCard(props) {
                 </IconButton>
             </div>
         </Card>
-    );
-}
-
-function EventEditorDialog(props) {
-    const [graphicsPackages, setGraphicsPackages] = useState(null);
-
-    useEffect(() => {
-        if (graphicsPackages == null) {
-            props.server.request('getGraphicsPackages').then((packages) => {
-                setGraphicsPackages(packages);
-            });
-        }
-    });
-
-    const changeNumberProperty = (propertyName, newValue) => {
-        if (!Number.isNaN(newValue)) {
-            props.onPropertyChange(propertyName, newValue);
-        }
-    }
-
-    //Properties that are unique to this type of event
-    let specificEventProperties = null;
-
-    if (props.event.type === 'Player') {        
-        let eventOffsetLabel = 'Seconds after start';
-        if (props.event.targetPlayerEvent === 'end') {
-            eventOffsetLabel = 'Seconds before end';
-        } else if (props.event.targetPlayerEvent === 'inbetween') {
-            eventOffsetLabel = 'Inbetween pause seconds';
-        }
-
-        specificEventProperties = (
-            <div style={{marginTop: '10px'}}>
-                <Typography variant='subtitle2'>Event frequency</Typography>
-                <div style={{display: 'flex', marginLeft:'10px', alignItems: 'center'}}>
-                    <Typography>Every</Typography>
-                    <FormControl margin='dense' className='smallSelect'>
-                        <Select value={props.event.frequency} onChange={(ev) => {changeNumberProperty('frequency', ev.target.value)}}
-                           variant='filled'>
-                            <MenuItem value={1}>1</MenuItem>
-                            <MenuItem value={2}>2</MenuItem>
-                            <MenuItem value={3}>3</MenuItem>
-                            <MenuItem value={4}>4</MenuItem>
-                            <MenuItem value={5}>5</MenuItem>
-                        </Select>
-                    </FormControl>
-                    <Typography>block(s)</Typography>
-                </div>
-
-                <Typography variant='subtitle2'>Time</Typography>
-                <div style={{display: 'flex', marginLeft:'10px', alignItems: 'center'}}>
-                    <FormControl margin='dense'>
-                        <InputLabel>Position</InputLabel>
-                        <Select value={props.event.targetPlayerEvent} onChange={(ev) => {props.onPropertyChange('targetPlayerEvent', ev.target.value)}}
-                           variant='filled'>
-                            <MenuItem value={'start'}>Start of block</MenuItem>
-                            <MenuItem value={'end'}>End of block</MenuItem>
-                            <MenuItem value={'inbetween'}>Inbetween blocks</MenuItem>
-                        </Select>
-                    </FormControl>
-                </div>
-
-                <div style={{display: 'flex', marginLeft:'10px', alignItems: 'center'}}>
-                    <FormControl>
-                        <TextField variant='filled' label={eventOffsetLabel}
-                          value={props.event.eventOffset / 1000} onChange={(ev) => {changeNumberProperty('eventOffset', ev.target.value * 1000)}} />
-                    </FormControl>
-                </div>
-            </div>
-        )
-    }
-
-    let actionProperties = null;
-    if (props.event.action.type === 'GraphicEvent') {
-        let graphicLayerMap = {}; //Maps layer name to GraphicLayer object
-        let graphicLayerItems = [];
-        let graphicLayersSelect = null;
-        if (graphicsPackages != null) {
-            //Loop through each layer in each package
-            for (let gPackage of graphicsPackages) {
-                for (let layer of gPackage.layers) {
-                    graphicLayerItems.push(<MenuItem key={layer.name} value={layer.name}>{layer.name}</MenuItem>);
-                    graphicLayerMap[layer.name] = layer;
-                }
-            }
-
-            const onLayerChanged = (layerName) => {
-                props.onPropertyChange('action.targetLayer', layerName);
-                //If the layer has the duration for an 'in' animation defined, use that as the GraphicAction's animInTime
-                if (graphicLayerMap[layerName] && graphicLayerMap[layerName].animationTimings) {
-                    let inTime = graphicLayerMap[layerName].animationTimings.in;
-                    if (inTime !== undefined) {
-                        props.onPropertyChange('action.animInTime', inTime);
-                    }
-                }
-            }
-
-            //This will need to be changed when the server allows multiple active packages to be selected
-            graphicLayersSelect = (
-                <FormControl style={{marginTop: '10px'}}>
-                    <InputLabel>Target layer</InputLabel>
-                    <Select value={props.event.action.targetLayer ? props.event.action.targetLayer : 'none'} onChange={(ev) => onLayerChanged(ev.target.value)}
-                        variant='filled'>
-                            <MenuItem value='none'>(None)</MenuItem>
-                            {graphicLayerItems}
-                    </Select>
-                </FormControl>
-            );
-        }
-        actionProperties = (
-            <div>
-                {graphicLayersSelect}
-            </div>
-        );
-    }
-
-    return (
-        <div>
-            <DialogTitle>{props.isNewEvent ? 'Create event' : 'Edit event'}</DialogTitle>
-            <DialogContent className='eventEditorBody'>
-                <FormGroup>
-                    <FormControl>
-                        <TextField label="Title" variant='filled' value={props.event.name} onChange={(ev) => {props.onPropertyChange('name', ev.target.value)}} />
-                    </FormControl>
-
-                    <div className='eventEditorSplit'>
-                        <div style={{ flex: 1 }}>
-                            <FormControl style={{ width: '100%' }}>
-                                <InputLabel>Event type</InputLabel>
-                                <Select value={props.event.type} onChange={(ev) => {props.onPropertyChange('type', ev.target.value)}} variant='filled'>
-                                    <MenuItem value={'Player'}>Player</MenuItem>
-                                    <MenuItem value={'Schedule'}>Schedule update</MenuItem>
-                                    <MenuItem value={'HTTP'}>HTTP Request</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            {specificEventProperties}
-                        </div>
-
-                        <div className='eventEditorDivider'>
-                            <Divider orientation="vertical" />
-                        </div>
-
-                        <div style={{ flex: 1 }}>
-                            <FormControl style={{ width: '100%' }}>
-                                <InputLabel>Action</InputLabel>
-                                <Select value={props.event.action.type ? props.event.action.type : ''} onChange={(ev) => {props.onPropertyChange('action.type', ev.target.value)}} variant='filled'>
-                                    <MenuItem value={'GraphicEvent'}>Show graphic</MenuItem>
-                                    <MenuItem value={'Webhook'}>Trigger webhook</MenuItem>
-                                </Select>
-                            </FormControl>
-
-                            {actionProperties}
-                        </div>
-                    </div>
-                </FormGroup>
-            </DialogContent>
-            <DialogActions>
-                <Button color="primary" onClick={props.onCancel}>Cancel</Button>
-                <Button color="primary" onClick={props.onSubmit}>Save changes</Button>
-            </DialogActions>
-        </div>
     );
 }

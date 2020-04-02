@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './ControlPanel.css';
 import { makeStyles } from '@material-ui/core/styles';
 import AppBar from '@material-ui/core/AppBar';
@@ -39,13 +39,15 @@ function ControlPanel() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showConnectOverlay, setShowConnectOverlay] = useState(true);
   const [disconnected, setDisconnected] = useState(false);
+  const [alertList, setAlertList] = useState(null);
 
   //ServerConnection setup
   const connect = () => {
-    console.info('Connecting to Rerun server...');
+    const serverAddress = 'ws://' + window.location.hostname + ':8080/controlWS';
+    console.info('Connecting to Rerun server at ' + serverAddress + '...');
     setDisconnected(false);
     
-    const serverConn = new ServerConnection('ws://' + window.location.hostname + ':8080/controlWS');
+    const serverConn = new ServerConnection(serverAddress);
     serverConn.onOpen(() => {
       setShowConnectOverlay(false);
     });
@@ -60,6 +62,18 @@ function ControlPanel() {
     connect();
   }
 
+  useEffect(() => {
+    if (alertList == null) {
+      server.request('getAlerts').then((alerts) => setAlertList(alerts)).catch(error => console.error('Error fetching alerts', error));
+    }
+
+    const alertListener = server.addMessageListener('setAlerts', (alerts) => setAlertList(alerts));
+
+    return () => {
+      server.removeMessageListener(alertListener);
+    }
+  });
+
   const appBarTitle = (path) => {
     switch (path) {
       case '/events': return 'Events';
@@ -72,7 +86,7 @@ function ControlPanel() {
   return (
     <Route>
       {({ location, history }) => (
-        <div style={{position: 'relative'}}>
+        <div style={{position: 'relative', display: 'flex', flexDirection: 'column', height: '100%'}}>
           <AppBar position="static">
             <Toolbar className={classes.headerbar}>
               <IconButton edge="start" className={classes.menuButton} onClick={() => setDrawerOpen(true)} color="inherit" aria-label="menu">
@@ -88,21 +102,23 @@ function ControlPanel() {
             <SideNavList location={location} navTo={(address) => {history.push(address); setDrawerOpen(false)}} />
           </Drawer>
 
-          <div id='pageContent'>
-            <Switch>
-              <Route exact path='/'>
-                <Dashboard server={server} />
-              </Route>
-              <Route exact path='/events'>
-                <EventsPage server={server} />
-              </Route>
-              <Route exact path='/sources'>
-                <ContentSourcesPage server={server} />
-              </Route>
-              <Route exact path='/settings'>
-                <SettingsPage server={server} />
-              </Route>
-            </Switch>
+          <div id='pageContainer'>
+            <div id='pageContent'>
+              <Switch>
+                <Route exact path='/'>
+                  <Dashboard server={server} alerts={alertList} />
+                </Route>
+                <Route exact path='/events'>
+                  <EventsPage server={server} />
+                </Route>
+                <Route exact path='/sources'>
+                  <ContentSourcesPage server={server} />
+                </Route>
+                <Route exact path='/settings'>
+                  <SettingsPage server={server} />
+                </Route>
+              </Switch>
+            </div>
           </div>
 
           <ConnectOverlay show={showConnectOverlay} failed={disconnected} onReconnectClicked={() => window.location.reload()} />

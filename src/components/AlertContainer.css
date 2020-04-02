@@ -1,0 +1,36 @@
+.alertContainerRoot {
+    margin-bottom: 10px;
+}
+
+.alertAllGood {
+    display: flex;
+    align-items: center;
+    margin: 10px 5px;
+}
+
+.alertDesc {
+    margin-left: 29px !important;
+}
+
+.alertIconText {
+    margin: 5px 10px;
+}
+
+.alertIconText > div {
+    display: flex;
+    align-items: center;
+}
+
+
+.alertIconText > h6 {
+    font-size: 1.2em;
+}
+
+.alertIconText > .MuiTypography-subtitle1 {
+    font-size: 1em;
+    display: block;
+}
+
+.alertIcon {
+    margin-right: 5px;
+}

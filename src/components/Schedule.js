@@ -64,17 +64,20 @@ export function Schedule(props) {
     }
 
     //Convert the contentBlocks into ScheduleListItems
-    let listItems = props.items.map((contentBlock, listIndex) => {
-        let listItem = ( <ScheduleListItem media={contentBlock.media} id={contentBlock.id} colour={contentBlock.colour}
-                status={contentBlock.mediaStatus} startTime={blockStartTime} onEditClicked={() => showBlockEditor(contentBlock)}
-                index={listIndex} key={contentBlock.id} onDeleteClicked={() => onBlockDelete(listIndex)}/>
-        );
-                
-        //Increase startTime by the duration of this media
-        blockStartTime = moment(blockStartTime).add(contentBlock.media.durationMs, 'milliseconds');
-        
-        return listItem;
-    });
+    let listItems;
+    if (props.items) {
+        listItems = props.items.map((contentBlock, listIndex) => {
+            let listItem = ( <ScheduleListItem media={contentBlock.media} id={contentBlock.id} colour={contentBlock.colour}
+                    status={contentBlock.mediaStatus} startTime={blockStartTime} onEditClicked={() => showBlockEditor(contentBlock)}
+                    index={listIndex} key={contentBlock.id} onDeleteClicked={() => onBlockDelete(listIndex)}/>
+            );
+                    
+            //Increase startTime by the duration of this media
+            blockStartTime = moment(blockStartTime).add(contentBlock.media.durationMs, 'milliseconds');
+            
+            return listItem;
+        });
+    }
 
     const onDragEnd = (result) => {
         const {destination, source} = result;

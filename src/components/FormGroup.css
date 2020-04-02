@@ -1,0 +1,9 @@
+.propGroupSection {
+    display: flex;
+    width: 100%;
+}
+
+.propGroupLine {
+    width: 10px;
+    align-self: stretch;
+}

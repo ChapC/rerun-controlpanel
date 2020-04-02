@@ -175,7 +175,7 @@ export function ContentSourcesPage(props) {
                             <PurpleSwitch checked={autoSourceOptions ? autoSourceOptions.enabled : false}
                              onChange={(ev) => changeAutoPoolOptions('enabled', ev.target.checked)} />
                         </div>
-                        <div className='csSetting' className='fullWidthField'>
+                        <div className='csSetting fullWidthField'>
                             <FormControl>
                                 <TextField variant='filled' label='Target queue size' type='number'
                                     value={autoSourceOptions ? autoSourceOptions.targetQueueSize : ''}
@@ -185,7 +185,7 @@ export function ContentSourcesPage(props) {
                         <div className='csSetting'>
                             <FormControl variant='filled' className='fullWidthField'>
                                 <InputLabel>Pull order</InputLabel>
-                                <Select value='Random' value={autoSourceOptions ? autoSourceOptions.pullOrder : 'Random'}
+                                <Select value={autoSourceOptions ? autoSourceOptions.pullOrder : 'Random'}
                                     onChange={(ev) => changeAutoPoolOptions('pullOrder', ev.target.value)}>
                                     <MenuItem value='Random'>Random source</MenuItem>
                                     <MenuItem value='OneEach'>One from each</MenuItem>

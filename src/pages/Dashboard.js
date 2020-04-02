@@ -28,6 +28,7 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import { friendlySourceTypes } from './ContentSourcesPage';
 import IntervalMillisCounter from '../helpers/IntervalMillisCounter';
+import AlertContainer from '../components/AlertContainer';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -113,6 +114,7 @@ const currentProgressTimer = new IntervalMillisCounter(500);
 
 export function Dashboard(props) {
   const [playbackState, setPlaybackState] = useState('Loading');
+  const [sentPlayerReq, setSentPlayerReq] = useState(false);
   const [onScreenBlock, setOnScreenBlock] = useState(null);
   const [scheduleList, setScheduleList] = useState([]);
   const [progressMs, setProgressMs] = useState(0);
@@ -128,8 +130,9 @@ export function Dashboard(props) {
       setNewPlayerState(messageData);
     });
 
-    if (onScreenBlock == null) {
+    if (!sentPlayerReq) {
       requestPlayerRefresh();
+      setSentPlayerReq(true);
     } else {
       currentProgressTimer.start(progressMs);
     }
@@ -148,7 +151,7 @@ export function Dashboard(props) {
     setPauseReason(newState.pauseReason);
 
     //Reset the progress timer
-    if (newState.currentBlock.media.durationMs != null) {
+    if (newState.currentBlock && newState.currentBlock.media.durationMs != null) {
       currentProgressTimer.start(newState.progressMs);
     } else {
       currentProgressTimer.stop();
@@ -162,7 +165,8 @@ export function Dashboard(props) {
     server.request('playerRefresh').then((newPlayerState) => {
       console.info('Received new player state', newPlayerState);
       setNewPlayerState(newPlayerState);
-    });
+      setSentPlayerReq(true);
+    }).catch((error) => setSentPlayerReq(false));
   }
 
   const onScheduleListChange = (newList, changeObject) => {
@@ -296,6 +300,8 @@ export function Dashboard(props) {
 
   return (
     <div style={{ position: 'relative' }}>
+      <AlertContainer alerts={props.alerts} hideWhenEmpty />
+
       <Card className='statusCard'>
         <div className='statusPauseOverlay' style={{ display: (playerPaused ? 'flex' : 'none') }}>
           <PauseIcon className={classes.pauseIcon} />
