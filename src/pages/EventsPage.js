@@ -28,19 +28,19 @@ const userStyles = makeStyles(theme => ({
 
 const customFormNames = (targetEvent) => {
     let eventOffsetTitle = "Offset";
-    if (targetEvent.event && targetEvent.event.logic && targetEvent.event.logic.targetPlayerEvent) {
-        if (targetEvent.event.logic.targetPlayerEvent.value === "Start of block") {
+    if (targetEvent.event && targetEvent.event.logic && targetEvent.event.logic.value.targetPlayerEvent) {
+        if (targetEvent.event.logic.value.targetPlayerEvent.value === "Start of block") {
             eventOffsetTitle = "Seconds after start";
-        } else if (targetEvent.event.logic.targetPlayerEvent.value === "End of block") {
+        } else if (targetEvent.event.logic.value.targetPlayerEvent.value === "End of block") {
             eventOffsetTitle = "Seconds before end";
-        } else if (targetEvent.event.logic.targetPlayerEvent.value === "Inbetween blocks") {
+        } else if (targetEvent.event.logic.value.targetPlayerEvent.value === "Inbetween blocks") {
             eventOffsetTitle = "Inbetween pause seconds";
         }
     }
 
     return (
         [
-            {key: "logic.eventOffsetSecs", name: eventOffsetTitle},
+            {key: "logic.value.eventOffsetSecs", name: eventOffsetTitle},
             {key: "logic", name: "Event options", placeAfter: "logicType"},
             {key: "action", placeAfter: "actionType"}
         ]
@@ -164,12 +164,13 @@ export function EventsPage(props) {
         //If the event type was changed, fetch the outline for the new type
         if (changedProperty === 'logicType') {
             server.request('getEventLogicOutline', {eventType: newValue}).then((logicOutline) => {
-                editorTarget.event.logic = formOutlineToProperties(logicOutline);
+                editorTarget.event.logic.value = formOutlineToProperties(logicOutline);
+                console.info(editorTarget)
                 setEditorTarget(editorTarget);
             });
         } else if (changedProperty === 'actionType') {
             server.request('getEventActionOutline', {actionType: newValue}).then((actionOutline) => {
-                editorTarget.event.action = formOutlineToProperties(actionOutline);
+                editorTarget.event.action.value = formOutlineToProperties(actionOutline);
                 setEditorTarget(editorTarget);
             });
         }
