@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import './FormGroup.css';
 import TextField from '@material-ui/core/TextField';
 import FormControl from '@material-ui/core/FormControl';
@@ -7,28 +7,39 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
+import TreeWalker from './TreeWalker';
 
+//Renders controls for SavablePropertyGroups
 export default function FormGroup(props) {
     const formItems = [];
 
     /*Custom property names can be specified with props.customNames.
     It looks like 
     [
-        { key: "secondPropertyKey", name: "renamedSecondProperty" }
+        { key: "secondPropertyKey", name: "Renamed second property" }
     ]
+    
+
+    //TODO: This custom data thing should be extended and React-ified. It could probably be specified as children, like
+            <FormGroup>
+                //Custom properties go here
+                <Property key='secondPropertyKey' name: 'Renamed second property' />
+                //Maybe even custom components to override the controls here
+                <CustomPropertyControl key='customPropertyKey' /> //ValidatedProperty passed as a prop
+            </FormGroup>
     */
 
     if (props.properties) {
         const formObjects = [];
 
-        //Pre-customization pass - searching for supported properties and nested forms
+        //Pre-customization pass - searching for supported ValidatedProperties and nested groups
         for (let key in props.properties) {
             let property = props.properties[key];
 
-            //Check that it's a form property
+            //Check that it's a ValidatedProperty
             if (property && property.type) {
-                if (property.type === 'subform') {
-                    //The keys on FormProperty's [value] object are FormProperties themselves (a nested form)
+                if (property.type === 'subgroup') {
+                    //The keys on ValidatedProperty's [value] object are ValidatedProperties themselves (a nested group)
                     const group = {
                         type: 'group', key: key,
                         items: []
@@ -95,16 +106,16 @@ export default function FormGroup(props) {
             }
         }
 
-        //Convert all the FormProperty objects into components
+        //Convert all the ValidatedProperty objects into components
         for (let o of formObjects) {
             if (o.type === 'group') {
                 formItems.push(
                     <PropertyGroup key={'nested' + o.key}>
-                        {o.items.map((i) => getPropertyComponent(i.key, i, props.onPropertyChange))}
+                        {o.items.map((i) => getPropertyComponent(i.key, i, props.onPropertyChange, props.server))}
                     </PropertyGroup>
                 );
             } else {
-                formItems.push(getPropertyComponent(o.key, o, props.onPropertyChange));
+                formItems.push(getPropertyComponent(o.key, o, props.onPropertyChange, props.server));
             }
         }
     }
@@ -116,7 +127,7 @@ export default function FormGroup(props) {
     );
 }
 
-function getPropertyComponent(key, property, onPropertyChange) {
+function getPropertyComponent(key, property, onPropertyChange, server) {
     switch (property.type) {
         case 'string':
             return (<StringProperty key={key} property={property} onChange={(v) => onPropertyChange(key, v)} />);
@@ -129,6 +140,8 @@ function getPropertyComponent(key, property, onPropertyChange) {
                 validate={validateIP} helpText='Not a valid IP address' />);
         case 'select-string':
             return (<StringSelectProperty key={key} property={property} onChange={(v) => onPropertyChange(key, v)} />);
+        case 'treepath':
+            return (<TreePathProperty key={key} property={property} onChange={(v) => onPropertyChange(key, v)} server={server} />);
         default:
             return null;
     }
@@ -140,25 +153,26 @@ export function formOutlineToProperties(outline) {
     for (let key in outline) {
         if (outline[key].propertyType) {
             let propertyOutline = outline[key];
-            let blankProperty = { type: propertyOutline.propertyType, value: '', name: propertyOutline.name };
-            if (propertyOutline.options) {
-                blankProperty.options = propertyOutline.options;
-            }
+            let blankProperty = propertyOutline;
+            blankProperty.type = propertyOutline.propertyType;
+            blankProperty.value = '';
+            blankProperty.name = propertyOutline.name;
+
             blankForm[key] = blankProperty;
         }
     }
     return blankForm;
 }
 
-//Converts an object with FormProperties to an object with their values
+//Converts an object with ValidatedProperties to an object with their values
 //eg. {favCol: {name: "Favourite colour", type:"string", value:"green"}} --> {favCol: "green"}
-export function formPropertiesToValues(propGroup) {
+export function validatedPropertiesToValues(propGroup) {
     let justValues = {};
     for (let key in propGroup) {
         let prop = propGroup[key];
         if (prop.value && prop.type) { //This is a FormProperty
-            if (prop.type === 'subform') { //This FormProperty a nested form
-                justValues[key] = formPropertiesToValues(prop.value);
+            if (prop.type === 'subgroup') { //This FormProperty a nested form
+                justValues[key] = validatedPropertiesToValues(prop.value);
             } else { //This FormProperty is just a normie
                 justValues[key] = prop.value;
             }
@@ -262,5 +276,102 @@ function StringSelectProperty(props) {
                 {props.property.options.map(option => <MenuItem value={option} key={option}>{option}</MenuItem>)}
             </Select>
         </FormControl>
+    )
+}
+
+function TreePathProperty(props) {
+    const [showTreeWalker, setShowTreeWalker] = useState(false);
+    const treeTextInput = useRef();
+    const [tree, setTree] = useState(null);
+    const [treeChange, setTreeChange] = useState(0);
+
+    useEffect(() => {
+        if (tree == null) {
+            props.server.request('getTreeNode', { propertyId: props.property.id, nodePath: '' }).then((node) => setTree(node));
+        }
+    });
+
+    const toPathString = (array) => {
+        let str = '';
+        array.map((key) => str += '/' + key);
+        return str;
+    }
+
+    const replaceNodeAtPath = (tree, pathArray, newNode) => {
+        //Start from the root of the tree, move down each key
+        let newTree = Object.assign(tree, {});
+        let currentNode = newTree;
+        //Traverse the tree to just before the last component of the path
+        for (let key of pathArray.slice(0, pathArray.length - 1)) {
+            for (let child of currentNode.children) {
+                if (child.key === key) {
+                    currentNode = child;
+                    break;
+                }
+            }
+        }
+
+        for (let i = 0; i < currentNode.children.length; i++) {
+            if (currentNode.children[i].key === newNode.key) {
+                currentNode.children.splice(i, 1);
+                currentNode.children.push(newNode);
+                break;
+            }
+        }
+        
+        return newTree;
+    }
+
+    const getNodeAtPath = (tree, path) => {
+        //Start from the root of the tree, move down each key
+        let currentNode = tree;
+        for (let key of path) {    
+          if (!currentNode.children) {
+            break; //This node has no children, cannot progress further
+          }
+          let foundChild = false;
+          for (let child of currentNode.children) {
+            if (child.key === key) {
+              currentNode = child;
+              foundChild = true;
+              break;
+            }
+          }
+      
+          if (!foundChild) {
+            break; //Couldn't find a child with the given key
+          }
+        }
+        return currentNode;
+      }
+
+    const hideTreeWalker = () => setShowTreeWalker(false);
+    const onTreeSelect = (keyArray) => {
+        //TreeWalker onSelect returns an array of keys to the selected node
+        let pathString = toPathString(keyArray);
+
+        if (getNodeAtPath(tree, pathString).nodeType === 'branch') {
+            //Send a request to fetch the children for this tree node
+            props.server.request('getTreeNode', { propertyId: props.property.id, nodePath: pathString }).then((node) => {
+                //Update our local tree with this new node
+                let newTree = replaceNodeAtPath(tree, keyArray, node);
+                setTree(newTree);
+                setTreeChange(treeChange+1); //eehhh there's probably a better way to trigger a render (setTree won't work as the key is the same)
+            });
+        } else {
+            //This is an edge node - select it
+        }
+
+        props.onChange(pathString);
+    };
+
+    return (
+        <div>
+            <FormControl className='fullWidthField'>
+                <TextField label={props.property.name} value={props.property.value}
+                    onChange={(ev) => props.onChange(ev.target.value)} variant='filled' inputRef={treeTextInput} onClick={() => setShowTreeWalker(true)} />
+            </FormControl>
+            <TreeWalker open={showTreeWalker} onSelect={onTreeSelect} onClose={hideTreeWalker} tree={tree} anchorEl={treeTextInput.current} treeChange={treeChange} />
+        </div>
     )
 }

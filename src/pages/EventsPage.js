@@ -13,7 +13,7 @@ import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
 import { BoltIcon } from '../res/BoltIcon';
 import FullscreenModal from '../components/FullscreenModal';
 import FormGroupEditor from '../components/editors/FormGroupEditor';
-import { formOutlineToProperties, formPropertiesToValues } from '../components/FormGroup';
+import { formOutlineToProperties, validatedPropertiesToValues } from '../components/FormGroup';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 
@@ -52,7 +52,7 @@ const eventListToValueList = (formPropertyList) => {
     let valueEvents = []; 
     formPropertyList.map((formEvent) => {
         let valuesOnly = { ...formEvent };
-        valuesOnly.event = formPropertiesToValues(formEvent.event);
+        valuesOnly.event = validatedPropertiesToValues(formEvent.event);
         valueEvents.push(valuesOnly);
     })
     return valueEvents;
@@ -198,7 +198,7 @@ export function EventsPage(props) {
             </div>
 
             <FullscreenModal show={showEditor} title={creatingNewEvent ? 'New event' : 'Edit event'} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}>
-                <FormGroupEditor properties={editorTarget.event} onPropertyChange={onEventEditorChange} customNames={customFormNames(editorTarget)} />
+                <FormGroupEditor properties={editorTarget.event} onPropertyChange={onEventEditorChange} customNames={customFormNames(editorTarget)} server={server} />
             </FullscreenModal>
         </div>
     );

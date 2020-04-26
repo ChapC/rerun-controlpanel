@@ -6,7 +6,7 @@ export default function FormGroupEditor(props) {
     return (
         <div className='fgEditRoot'>
             <div className='fgEditBody'>
-                <FormGroup properties={props.properties} onPropertyChange={props.onPropertyChange} customNames={props.customNames} />
+                <FormGroup properties={props.properties} onPropertyChange={props.onPropertyChange} customNames={props.customNames} server={props.server} />
             </div>
         </div>
     );
