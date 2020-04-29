@@ -69,7 +69,7 @@ export function EventsPage(props) {
 
     useEffect(() => {
         if (eventsList == null) {
-            server.request('getEvents').then((events) => {
+            server.sendRequest('getEvents').then((events) => {
                 setEventsList(eventListToValueList(events));
                 setEventsFormList(events);
             }).catch(error => {
@@ -80,26 +80,26 @@ export function EventsPage(props) {
         if (eventOutline == null) {
             //Grab the outline for a UserEvent object from the server
             setEventOutline({});
-            server.request('getEventOutline').then((eventOutline) => {
+            server.sendRequest('getEventOutline').then((eventOutline) => {
                 setEventOutline(eventOutline);
             });
         }
 
-        const listener = server.addMessageListener('setEventList', (newEventList) => {
+        const listener = server.onAlert('setEventList', (newEventList) => {
             setEventsList(eventListToValueList(newEventList));
             setEventsFormList(newEventList);
         });
 
-        return () => server.removeMessageListener(listener);
+        return () => server.offAlert(listener);
     });
 
     const onSetEventEnabled = (eventId, isEnabled) => {
-        server.request('setEventEnabled', { eventId: eventId, enabled: isEnabled })
+        server.sendRequest('setEventEnabled', { eventId: eventId, enabled: isEnabled })
             .catch((error) => console.error('Failed to set event enabled: ', error));
     }
 
     const deleteEvent = (eventId) => {
-        server.request('deleteEvent', { eventId: eventId })
+        server.sendRequest('deleteEvent', { eventId: eventId })
             .catch((error) => console.error('Failed to delete event:', error));
     }
 
@@ -163,13 +163,13 @@ export function EventsPage(props) {
 
         //If the event type was changed, fetch the outline for the new type
         if (changedProperty === 'logicType') {
-            server.request('getEventLogicOutline', {eventType: newValue}).then((logicOutline) => {
+            server.sendRequest('getEventLogicOutline', {eventType: newValue}).then((logicOutline) => {
                 editorTarget.event.logic.value = formOutlineToProperties(logicOutline);
                 console.info(editorTarget)
                 setEditorTarget(editorTarget);
             });
         } else if (changedProperty === 'actionType') {
-            server.request('getEventActionOutline', {actionType: newValue}).then((actionOutline) => {
+            server.sendRequest('getEventActionOutline', {actionType: newValue}).then((actionOutline) => {
                 editorTarget.event.action.value = formOutlineToProperties(actionOutline);
                 setEditorTarget(editorTarget);
             });
@@ -182,9 +182,9 @@ export function EventsPage(props) {
         //Submit the current editorTarget
         if (creatingNewEvent) {
             console.info('Submitting event ', editorTarget.event);
-            server.request('createEvent', editorTarget.event).then(() => setShowEditor(false));
+            server.sendRequest('createEvent', editorTarget.event).then(() => setShowEditor(false));
         } else {
-            server.request('updateEvent', { eventId: editorTarget.id, newEvent: editorTarget.event }).then(() => {
+            server.sendRequest('updateEvent', { eventId: editorTarget.id, newEvent: editorTarget.event }).then(() => {
                 setShowEditor(false);
             });
         }

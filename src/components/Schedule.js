@@ -50,7 +50,7 @@ export function Schedule(props) {
     }
 
     const onBlockEditorSubmit = () => {
-        props.server.request('updateContentBlock', {block: contentBlockEditTarget}).then(() => {
+        props.server.sendRequest('updateContentBlock', {block: contentBlockEditTarget}).then(() => {
             setShowContentBlockEditor(false);
         }).catch(error => {
             console.error('Content block update failed', error);

@@ -126,7 +126,7 @@ export function Dashboard(props) {
   currentProgressTimer.callback = (newTime) => setProgressMs(newTime);
 
   useEffect(() => {
-    const listener = server.addMessageListener('setPlayerState', (messageData) => {
+    const listener = server.onAlert('setPlayerState', (messageData) => {
       setNewPlayerState(messageData);
     });
 
@@ -138,7 +138,7 @@ export function Dashboard(props) {
     }
     
     return () => {
-      server.removeMessageListener(listener);
+      server.offAlert(listener);
       currentProgressTimer.stop();
     };
   });
@@ -162,7 +162,7 @@ export function Dashboard(props) {
 
   const requestPlayerRefresh = () => {
     console.info('Requesting player state refresh...');
-    server.request('playerRefresh').then((newPlayerState) => {
+    server.sendRequest('playerRefresh').then((newPlayerState) => {
       console.info('Received new player state', newPlayerState);
       setNewPlayerState(newPlayerState);
       setSentPlayerReq(true);
@@ -173,7 +173,7 @@ export function Dashboard(props) {
     setScheduleList(newList); //Update the local list
 
     console.info('Requesting schedule change', changeObject);
-    server.request('scheduleChange', changeObject).then((response) => {
+    server.sendRequest('scheduleChange', changeObject).then((response) => {
       console.info('Schedule change accepted');
     }).catch((error) => {
       console.error('Schedule change request failed: ', error);
@@ -187,7 +187,7 @@ export function Dashboard(props) {
 
   const onNextBlockClicked = () => {
     console.info('Requesting move to next ContentBlock');
-    server.request('nextBlock').then(() => console.info('Next ContentBlock accepted')).catch((error) => {
+    server.sendRequest('nextBlock').then(() => console.info('Next ContentBlock accepted')).catch((error) => {
       console.error('Next ContentBlock request failed: ', error);
 
       if (error.code === 'NoNextBlock') {
@@ -199,14 +199,14 @@ export function Dashboard(props) {
 
   const onStopClicked = () => {
     console.info('Requesting stop to title');
-    server.request('stopToTitle').then(() => console.info('Stop to title accepted')).catch((error) => {
+    server.sendRequest('stopToTitle').then(() => console.info('Stop to title accepted')).catch((error) => {
       console.error('Stop to title request failed: ', error);
     });
   }
 
   const onRestartClicked = () => {
     console.info('Requesting playback restart');
-    server.request('restartPlayback').then(() => console.info('Playback restart accepted')).catch((error) => {
+    server.sendRequest('restartPlayback').then(() => console.info('Playback restart accepted')).catch((error) => {
       console.error('Media restart request failed: ', error);
     });
   }
@@ -220,7 +220,7 @@ export function Dashboard(props) {
   }
 
   const onBlockEditorSubmit = () => {
-    props.server.request('addContentBlock', { block: createBlockEditorTarget }).then(() => {
+    props.server.sendRequest('addContentBlock', { block: createBlockEditorTarget }).then(() => {
       setShowCreateBlockEditor(false);
     }).catch(error => {
       console.error('Content block update failed', error);
@@ -253,14 +253,14 @@ export function Dashboard(props) {
   const [sourceList, setSourceList] = useState([]);
   const openSourceSelect = (event) => {
     setShowAddBlockMenu(false);
-    server.request('getContentSources').then((sources) => {
+    server.sendRequest('getContentSources').then((sources) => {
       setSourceList(sources);
       setShowSourceSelect(true);
     });
   }
 
   const pullFromContentSource = (sourceId) => {
-    server.request('pullFromContentSource', { sourceId: sourceId }).then(() => {
+    server.sendRequest('pullFromContentSource', { sourceId: sourceId }).then(() => {
       setShowSourceSelect(false);
     }).catch((error) => {
       window.alert(error.message);

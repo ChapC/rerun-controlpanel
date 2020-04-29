@@ -287,7 +287,7 @@ function TreePathProperty(props) {
 
     useEffect(() => {
         if (tree == null) {
-            props.server.request('getTreeNode', { propertyId: props.property.id, nodePath: '' }).then((node) => setTree(node));
+            props.server.sendRequest(`property/treepath/${props.property.id}/node:get`, '').then((node) => setTree(node)); //Get the root node
         }
     });
 
@@ -352,7 +352,7 @@ function TreePathProperty(props) {
 
         if (getNodeAtPath(tree, pathString).nodeType === 'branch') {
             //Send a request to fetch the children for this tree node
-            props.server.request('getTreeNode', { propertyId: props.property.id, nodePath: pathString }).then((node) => {
+            props.server.sendRequest(`property/treepath/${props.property.id}/node:get`, pathString).then((node) => {
                 //Update our local tree with this new node
                 let newTree = replaceNodeAtPath(tree, keyArray, node);
                 setTree(newTree);

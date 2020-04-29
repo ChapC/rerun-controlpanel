@@ -7,7 +7,8 @@ import Typography from '@material-ui/core/Typography';
 import IconButton from '@material-ui/core/IconButton';
 import MenuIcon from '@material-ui/icons/Menu';
 import Drawer from '@material-ui/core/Drawer';
-import ServerConnection from './helpers/ServerConnection';
+import { WSConnection } from './helpers/WebsocketConnection';
+import { WebsocketHeartbeat } from './helpers/WebsocketHeartbeat';
 import {Dashboard} from './pages/Dashboard';
 import {SideNavList} from './components/SideNavList';
 import { Route, Switch } from "react-router-dom";
@@ -46,12 +47,14 @@ function ControlPanel() {
     const serverAddress = 'ws://' + window.location.hostname + ':8080/controlWS';
     console.info('Connecting to Rerun server at ' + serverAddress + '...');
     setDisconnected(false);
-    
-    const serverConn = new ServerConnection(serverAddress);
-    serverConn.onOpen(() => {
+  
+    let socket = new WebSocket(serverAddress);
+    new WebsocketHeartbeat(socket);
+    const serverConn = new WSConnection(socket);
+    serverConn.on('open', () => {
       setShowConnectOverlay(false);
     });
-    serverConn.onClose(() => {
+    serverConn.on('close', () => {
       setShowConnectOverlay(true);
       setDisconnected(true);
     });
@@ -64,13 +67,13 @@ function ControlPanel() {
 
   useEffect(() => {
     if (alertList == null) {
-      server.request('getAlerts').then((alerts) => setAlertList(alerts)).catch(error => console.error('Error fetching alerts', error));
+      server.sendRequest('getAlerts').then((alerts) => setAlertList(alerts)).catch(error => console.error('Error fetching alerts', error));
     }
 
-    const alertListener = server.addMessageListener('setAlerts', (alerts) => setAlertList(alerts));
+    const alertListener = server.onAlert('setAlerts', (alerts) => setAlertList(alerts));
 
     return () => {
-      server.removeMessageListener(alertListener);
+      server.offAlert(alertListener);
     }
   });
 

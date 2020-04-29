@@ -49,35 +49,35 @@ export function ContentSourcesPage(props) {
     const [autoSourceOptions, setAutoSourceOptions] = useState(null);
 
     useEffect(() => {
-        const newSourcesListener = server.addMessageListener('setContentSources', (newContentSources) => setContentSources(newContentSources));
+        const newSourcesListener = server.onAlert('setContentSources', (newContentSources) => setContentSources(newContentSources));
 
         if (contentSources == null) {
-            server.request('getContentSources').then((sources) => {
+            server.sendRequest('getContentSources').then((sources) => {
                 console.dir(sources);
                 setContentSources(sources);
             });
         }
 
-        const sourcesInPoolListener = server.addMessageListener('setAutoPoolList', (newAutoPool) => setSourcesInPool(newAutoPool));
+        const sourcesInPoolListener = server.onAlert('setAutoPoolList', (newAutoPool) => setSourcesInPool(newAutoPool));
 
         if (sourcesInPool == null) {
-            server.request('getAutoPool').then((autoPool) => {
+            server.sendRequest('getAutoPool').then((autoPool) => {
                 setSourcesInPool(autoPool.pool);
                 setAutoSourceOptions(autoPool.options);
             });
         }
 
-        const poolOptionsListener = server.addMessageListener('setAutoPoolOptions', (options) => setAutoSourceOptions(options));
+        const poolOptionsListener = server.onAlert('setAutoPoolOptions', (options) => setAutoSourceOptions(options));
 
         return (() => {
-            server.removeMessageListener(newSourcesListener);
-            server.removeMessageListener(sourcesInPoolListener);
-            server.removeMessageListener(poolOptionsListener);
+            server.offAlert(newSourcesListener);
+            server.offAlert(sourcesInPoolListener);
+            server.offAlert(poolOptionsListener);
         });
     });
 
     const deleteSource = (sourceId) => {
-        server.request('deleteContentSource', { sourceId: sourceId })
+        server.sendRequest('deleteContentSource', { sourceId: sourceId })
         .catch((error) => console.error(error));
     }
 
@@ -94,13 +94,11 @@ export function ContentSourcesPage(props) {
 
         newOptions[property] = value;
 
-        server.request('setAutoPoolOptions', newOptions).catch(error => window.alert(error.message));
+        server.sendRequest('setAutoPoolOptions', newOptions).catch(error => window.alert(error.message));
     }
 
     const setUseSourceInPool = (sourceId, enabled) => {
-        server.request('setUseSourceInPool', {sourceId: sourceId, enabled: enabled}).then((response) => {
-            console.info(response);
-        }).catch(error => window.alert(error.message));
+        server.sendRequest('setUseSourceInPool', {sourceId: sourceId, enabled: enabled}).catch(error => window.alert(error.message));
     }
 
     const isSourceInPool = (sourceId) => {
@@ -134,7 +132,7 @@ export function ContentSourcesPage(props) {
     }
 
     const onSourceSubmit = () => {
-        props.server.request('newContentSource', { newSource: editorTarget }).then(() => {
+        props.server.sendRequest('newContentSource', { newSource: editorTarget }).then(() => {
             setShowEditor(false);
         }).catch(error => {
             console.error('Create content source failed', error);
@@ -236,7 +234,7 @@ function ContentSourceItem(props) {
     }
 
     const onSourceSubmit = () => {
-        props.server.request('updateContentSource', { sourceId: props.source.id, newSource: editTarget }).then(() => {
+        props.server.sendRequest('updateContentSource', { sourceId: props.source.id, newSource: editTarget }).then(() => {
             setShowEditor(false);
         }).catch(error => {
             console.error('Content source update failed', error);
