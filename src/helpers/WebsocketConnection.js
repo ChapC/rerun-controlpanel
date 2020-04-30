@@ -1,5 +1,4 @@
 //Compiled version of WebsocketConnection.ts from Rerun server. Modified to work with browser websocket.
-"use strict";
 var __extends = (this && this.__extends) || (function () {
     var extendStatics = function (d, b) {
         extendStatics = Object.setPrototypeOf ||

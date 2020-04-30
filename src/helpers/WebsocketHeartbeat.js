@@ -1,4 +1,3 @@
-"use strict";
 exports.__esModule = true;
 var pingFrequency = 5000;
 var WebsocketHeartbeat = /** @class */ (function () {
