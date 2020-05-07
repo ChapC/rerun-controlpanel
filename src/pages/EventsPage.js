@@ -16,6 +16,7 @@ import FormGroupEditor from '../components/editors/FormGroupEditor';
 import { formOutlineToProperties, validatedPropertiesToValues } from '../components/FormGroup';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
+import EventNoteIcon from '@material-ui/icons/EventNote';
 
 const userStyles = makeStyles(theme => ({
     eventTitle: {
@@ -28,13 +29,11 @@ const userStyles = makeStyles(theme => ({
 
 const customFormNames = (targetEvent) => {
     let eventOffsetTitle = "Offset";
-    if (targetEvent.event && targetEvent.event.logic && targetEvent.event.logic.value.targetPlayerEvent) {
-        if (targetEvent.event.logic.value.targetPlayerEvent.value === "Start of block") {
+    if (targetEvent.event && targetEvent.event.logic && targetEvent.event.logic.value.fromPosition) {
+        if (targetEvent.event.logic.value.fromPosition.value === "Start of block") {
             eventOffsetTitle = "Seconds after start";
-        } else if (targetEvent.event.logic.value.targetPlayerEvent.value === "End of block") {
+        } else if (targetEvent.event.logic.value.fromPosition.value === "End of block") {
             eventOffsetTitle = "Seconds before end";
-        } else if (targetEvent.event.logic.value.targetPlayerEvent.value === "Inbetween blocks") {
-            eventOffsetTitle = "Inbetween pause seconds";
         }
     }
 
@@ -227,88 +226,78 @@ const nth = function (d) {
     }
 }
 
+const logicDescriptionRenderers = {
+    'During a block': (e) => <InBlockAction event={e} />
+}
+
+function InBlockAction(props) {
+    let relTimeQualifier = '';
+    if (props.event.logic.fromPosition === 'Start of block') {
+        if (props.event.logic.eventOffsetSecs === 0) {
+            relTimeQualifier = 'At the start'
+        } else {
+            relTimeQualifier = props.event.logic.eventOffsetSecs + 's after the start'
+        }
+    } else if (props.event.logic.fromPosition === 'End of block') {
+        if (props.event.logic.eventOffsetSecs === 0) {
+            relTimeQualifier = 'At the end'
+        } else {
+            relTimeQualifier = props.event.logic.eventOffsetSecs + 's before the end'
+        }
+    }
+
+    return (
+        <div className='playerEventDescription'>
+            <div>
+                <PlayCircleOutlineIcon className='playerEventIcon' />
+                <Typography>
+                    Every {props.event.logic.frequency === 1 ? '' : props.event.logic.frequency + nth(props.event.logic.frequency) + ' '}block
+                </Typography>
+            </div>
+            <div>
+                <AlarmIcon className='playerEventIcon' />
+                <Typography>{relTimeQualifier}</Typography>
+            </div>
+        </div>
+    );
+}
+
+const actionDescriptionRenderers = {
+    'Show a graphic': (e) => <ShowGraphicAction event={e} />
+}
+
+function ShowGraphicAction(props) {
+    let waitTime = null;
+    let outEvent = null;
+
+    return (
+        <div className='playerEventDescription'>
+            <div style={{ alignItems: 'center' }}>
+                <DoubleArrowIcon />
+                <Typography>{props.event.action.targetLayerName}</Typography>
+            </div>
+            {waitTime}
+            {outEvent}
+        </div>
+    );
+}
+
 function EventCard(props) {
     const classes = userStyles();
     const mEvent = props.event;
 
-    let eventTypeText = mEvent.logicType + ' event';
-
     //Default event descriptions
-    let eventDescription = (<div className='flexCenter backgroundText'><Typography variant='subtitle1'>[Custom event]</Typography></div>)
+    let logicDescription = (<div className='flexCenter backgroundText'><Typography variant='subtitle1'>[Custom event]</Typography></div>)
     let actionDescription = (<div className='flexCenter'><Typography variant='subtitle2'>?</Typography></div>);
-    let actionName = 'Run a server action';
 
     //Use the action renderer for this event's action type
-    if (mEvent.actionType === 'Show a graphic') {
-        actionName = 'Play a graphic';
-        let waitTime = null;
-        let outEvent = null;
-        if (mEvent.logicType === 'Player' && mEvent.logic.targetPlayerEvent === 'inbetween' && mEvent.logic.eventOffsetSecs !== 0) {
-            let waitSeconds = mEvent.logic.eventOffsetSecs;
-            waitTime = (
-                <div style={{ alignItems: 'center' }}>
-                    <Typography variant='subtitle2'>Pause {waitSeconds} second{waitSeconds !== 1 ? 's' : ''}</Typography>
-                </div>
-            );
-            outEvent = (
-                <div style={{ alignItems: 'center' }}>
-                    <DoubleArrowIcon style={{ transform: 'scaleX(-1)' }} />
-                    <Typography variant='subtitle2'>{mEvent.action.targetLayerName}</Typography>
-                </div>
-            );
-        }
-
-        actionDescription = (
-            <div className='playerEventDescription'>
-                <div style={{ alignItems: 'center' }}>
-                    <DoubleArrowIcon />
-                    <Typography variant='subtitle2'>{mEvent.action.targetLayerName}</Typography>
-                </div>
-                {waitTime}
-                {outEvent}
-            </div>
-        );
+    if (actionDescriptionRenderers[mEvent.actionType] != null) {
+        actionDescription = actionDescriptionRenderers[mEvent.actionType](mEvent);
     }
 
     //Use the description renderer for this type of event
-    if (mEvent.logicType === 'Player') {
-        let relTimeQualifier = 'Inbetween the blocks';
-        if (mEvent.logic.targetPlayerEvent === 'Start of block') {
-            if (mEvent.logic.eventOffsetSecs === 0) {
-                relTimeQualifier = 'At the start'
-            } else {
-                relTimeQualifier = mEvent.logic.eventOffsetSecs + 's after the start'
-            }
-        } else if (mEvent.logic.targetPlayerEvent === 'End of block') {
-            if (mEvent.logic.eventOffsetSecs === 0) {
-                relTimeQualifier = 'At the end'
-            } else {
-                relTimeQualifier = mEvent.logic.eventOffsetSecs + 's before the end'
-            }
-        }
-        eventDescription = (
-            <div className='playerEventDescription'>
-                <div>
-                    <PlayCircleOutlineIcon className='playerEventIcon' />
-                    <Typography>
-                        Every {mEvent.logic.frequency === 1 ? '' : mEvent.logic.frequency + nth(mEvent.logic.frequency) + ' '}block
-                    </Typography>
-                </div>
-                <div>
-                    <AlarmIcon className='playerEventIcon' />
-                    <Typography>{relTimeQualifier}</Typography>
-                </div>
-                <div>
-                    <BoltIcon className='playerEventIcon' />
-                    <div style={{ width: '100%' }}>
-                        <Typography>{actionName}</Typography>
-                        <div className='playerEventActionContainer'>
-                            {actionDescription}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+    if (logicDescriptionRenderers[mEvent.logicType] != null) {
+        logicDescription = logicDescriptionRenderers[mEvent.logicType](mEvent);
     }
 
     let bodyStyle = {};
@@ -316,24 +305,50 @@ function EventCard(props) {
         bodyStyle = { userSelect: 'none', opacity: 0.5 };
     }
 
-    return (
+   return (
         <Card className='eventCardRoot'>
             <div className='eventCardHeader'>
-                <Typography variant='h5' className={classes.eventTitle} noWrap>{mEvent.name}</Typography>
+                <Typography variant='h6' className={classes.eventTitle} noWrap>{mEvent.name}</Typography>
                 <PurpleSwitch size='small' checked={props.enabled} onChange={() => props.onSetEnabled(!props.enabled)} inputProps={{ 'aria-label': 'event enabled' }} />
             </div>
             <div className='eventCardBody' style={bodyStyle}>
-                {eventDescription}
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
+                        <div className='eventCardSectionIcon'>
+                            <EventNoteIcon />
+                        </div>
+                        <Typography variant='h5' className='eventCardSectionTitle'>During a block</Typography>
+                    </div>
+                    <div className='eventCardSection'>
+                        <div className='eventCardSectionBar'></div>
+                        <div className='eventCardDescriptionContainer'>
+                            {logicDescription}
+                        </div>
+                    </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
+                        <div className='eventCardSectionIcon'>
+                            <BoltIcon style={{ color: 'white' }} />
+                        </div>
+                        <Typography variant='h5' className='eventCardSectionTitle'>Show a graphic</Typography>
+                    </div>
+                    <div className='eventCardSection'>
+                        <div className='eventCardSectionBar'></div>
+                        <div className='eventCardDescriptionContainer'>
+                            {actionDescription}
+                        </div>
+                    </div>
+                </div>
             </div>
             <div className='eventCardFooter'>
                 <IconButton size='small' onClick={props.onEditClicked}>
                     <EditIcon />
                 </IconButton>
-                <Typography variant='subtitle1' className='backgroundText' noWrap>{eventTypeText}</Typography>
                 <IconButton size='small' onClick={props.onDeleteClicked}>
                     <DeleteIcon />
                 </IconButton>
             </div>
         </Card>
-    );
+   );
 }
