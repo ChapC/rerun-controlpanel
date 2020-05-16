@@ -39,16 +39,16 @@ const customFormNames = (targetEvent) => {
 
     return (
         [
-            {key: "logic.value.eventOffsetSecs", name: eventOffsetTitle},
-            {key: "logic", name: "Event options", placeAfter: "logicType"},
-            {key: "action", placeAfter: "actionType"}
+            { key: "logic.value.eventOffsetSecs", name: eventOffsetTitle },
+            { key: "logic", name: "Event options", placeAfter: "logicType" },
+            { key: "action", placeAfter: "actionType" }
         ]
     );
 };
 
 //Convert the events from FormProperties to just their values
 const eventListToValueList = (formPropertyList) => {
-    let valueEvents = []; 
+    let valueEvents = [];
     formPropertyList.map((formEvent) => {
         let valuesOnly = { ...formEvent };
         valuesOnly.event = validatedPropertiesToValues(formEvent.event);
@@ -118,7 +118,7 @@ export function EventsPage(props) {
     }
 
     const showNewEventEditor = () => {
-        setEditorTarget({id: undefined, enabled: undefined, event: formOutlineToProperties(eventOutline)});
+        setEditorTarget({ id: undefined, enabled: undefined, event: formOutlineToProperties(eventOutline) });
         setCreatingNewEvent(true);
         setShowEditor(true);
     }
@@ -162,13 +162,13 @@ export function EventsPage(props) {
 
         //If the event type was changed, fetch the outline for the new type
         if (changedProperty === 'logicType') {
-            server.sendRequest('getEventLogicOutline', {eventType: newValue}).then((logicOutline) => {
+            server.sendRequest('getEventLogicOutline', { eventType: newValue }).then((logicOutline) => {
                 editorTarget.event.logic.value = formOutlineToProperties(logicOutline);
                 console.info(editorTarget)
                 setEditorTarget(editorTarget);
             });
         } else if (changedProperty === 'actionType') {
-            server.sendRequest('getEventActionOutline', {actionType: newValue}).then((actionOutline) => {
+            server.sendRequest('getEventActionOutline', { actionType: newValue }).then((actionOutline) => {
                 editorTarget.event.action.value = formOutlineToProperties(actionOutline);
                 setEditorTarget(editorTarget);
             });
@@ -227,7 +227,8 @@ const nth = function (d) {
 }
 
 const logicDescriptionRenderers = {
-    'During a block': (e) => <InBlockAction event={e} />
+    'During a block': e => <InBlockAction event={e} />,
+    'In-between blocks': e => <BetweenBlockAction event={e} />
 }
 
 function InBlockAction(props) {
@@ -260,6 +261,19 @@ function InBlockAction(props) {
             </div>
         </div>
     );
+}
+
+function BetweenBlockAction(props) {
+    return (
+        <div className='playerEventDescription'>
+            <div>
+                <PlayCircleOutlineIcon className='playerEventIcon' />
+                <Typography>
+                    After every {props.event.logic.frequency === 1 ? '' : props.event.logic.frequency + nth(props.event.logic.frequency) + ' '}block
+                </Typography>
+            </div>
+        </div>
+    )
 }
 
 const actionDescriptionRenderers = {
@@ -305,7 +319,7 @@ function EventCard(props) {
         bodyStyle = { userSelect: 'none', opacity: 0.5 };
     }
 
-   return (
+    return (
         <Card className='eventCardRoot'>
             <div className='eventCardHeader'>
                 <Typography variant='h6' className={classes.eventTitle} noWrap>{mEvent.name}</Typography>
@@ -313,11 +327,11 @@ function EventCard(props) {
             </div>
             <div className='eventCardBody' style={bodyStyle}>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
                         <div className='eventCardSectionIcon'>
                             <EventNoteIcon />
                         </div>
-                        <Typography variant='h5' className='eventCardSectionTitle'>During a block</Typography>
+                        <Typography variant='h5' className='eventCardSectionTitle'>{mEvent.logicType}</Typography>
                     </div>
                     <div className='eventCardSection'>
                         <div className='eventCardSectionBar'></div>
@@ -327,7 +341,7 @@ function EventCard(props) {
                     </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{width: '100%', display: 'flex', alignItems: 'center'}}>
+                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
                         <div className='eventCardSectionIcon'>
                             <BoltIcon style={{ color: 'white' }} />
                         </div>
@@ -350,5 +364,5 @@ function EventCard(props) {
                 </IconButton>
             </div>
         </Card>
-   );
+    );
 }
