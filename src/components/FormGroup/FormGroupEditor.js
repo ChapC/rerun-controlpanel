@@ -1,6 +1,6 @@
 import React from 'react';
 import './FormGroupEditor.css';
-import FormGroup from '../FormGroup';
+import FormGroup from './FormGroup';
 
 export default function FormGroupEditor(props) {
     return (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import FormGroup from '../components/FormGroup';
+import FormGroup from '../components/FormGroup/FormGroup';
 import { debounce } from "debounce";
 
 const submitProperty = debounce((propertyKey, newValue, server) => {

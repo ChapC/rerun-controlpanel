@@ -12,8 +12,9 @@ import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
 import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
 import { BoltIcon } from '../res/BoltIcon';
 import FullscreenModal from '../components/FullscreenModal';
-import FormGroupEditor from '../components/editors/FormGroupEditor';
-import { formOutlineToProperties, validatedPropertiesToValues } from '../components/FormGroup';
+import FormGroupEditor from '../components/FormGroup/FormGroupEditor';
+import EditorTargetProvider from '../components/FormGroup/EditorTargetProvider';
+import { formOutlineToProperties, validatedPropertiesToValues } from '../components/FormGroup/FormGroup';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import EventNoteIcon from '@material-ui/icons/EventNote';
@@ -57,22 +58,29 @@ const eventListToValueList = (formPropertyList) => {
     return valueEvents;
 }
 
+let fetchingEventsList = false;
+
 export function EventsPage(props) {
     const server = props.server;
-    const [eventOutline, setEventOutline] = useState(null); //The form outline of an event, used when creating events from scratch
+    const [eventOutline, setEventOutline] = useState(null); //The base outline of an event object, used when creating events from scratch
     const [eventsList, setEventsList] = useState(null); //Events converted from forms to just values
     const [eventsFormList, setEventsFormList] = useState([]); //Events as forms, as they come from the server
+    //Event editor
+    const [editorTargetProvider, setEditorTargetProvider] = useState({});
     const [editorTarget, setEditorTarget] = useState({}); //The event currently being worked on in the editor
     const [showEditor, setShowEditor] = useState(false);
     const [creatingNewEvent, setCreatingNewEvent] = useState(false);
 
     useEffect(() => {
-        if (eventsList == null) {
+        if (eventsList == null && !fetchingEventsList) {
+            fetchingEventsList = true;
             server.sendRequest('getEvents').then((events) => {
                 setEventsList(eventListToValueList(events));
                 setEventsFormList(events);
+                fetchingEventsList = false;
             }).catch(error => {
                 console.error('Failed to fetch events:', error);
+                fetchingEventsList = false;
             });
         }
 
@@ -102,7 +110,7 @@ export function EventsPage(props) {
             .catch((error) => console.error('Failed to delete event:', error));
     }
 
-    const showEditDialog = (eventID) => {
+    const showModifyEventEditor = (eventID) => {
         //Find the target event form in eventsFormList
         let targetEvent = null;
         for (let e of eventsFormList) {
@@ -110,15 +118,29 @@ export function EventsPage(props) {
                 targetEvent = e;
                 break;
             }
-        }
+        }        
+        
+        //The EditorTarget class returns the event's properties (logic and action settings), but we want them wrapped in an actual Event object
+        let onEditTargetChange = (changedEvent) => setEditorTarget({
+            id: targetEvent.id, enabled: targetEvent.enabled, event: changedEvent
+        });
 
-        setEditorTarget(JSON.parse(JSON.stringify(targetEvent)));
+        let targetProvider = new EditorTargetProvider(JSON.parse(JSON.stringify(targetEvent.event)), onEditTargetChange, server);
+
+        setEditorTarget({ event: targetProvider.editorTarget});
+        setEditorTargetProvider(targetProvider);
         setCreatingNewEvent(false);
         setShowEditor(true);
     }
 
     const showNewEventEditor = () => {
-        setEditorTarget({ id: undefined, enabled: undefined, event: formOutlineToProperties(eventOutline) });
+
+        let onEditTargetChange = (changedEvent) => setEditorTarget({ event: changedEvent });
+
+        let targetProvider = new EditorTargetProvider(formOutlineToProperties(eventOutline), onEditTargetChange, server);
+
+        setEditorTarget({ event: targetProvider.editorTarget});
+        setEditorTargetProvider(targetProvider);
         setCreatingNewEvent(true);
         setShowEditor(true);
     }
@@ -135,46 +157,11 @@ export function EventsPage(props) {
             cards = eventsList.map((tEvent, index) => (
                 <EventCard event={tEvent.event} enabled={tEvent.enabled}
                     onSetEnabled={(enabled) => onSetEventEnabled(tEvent.id, enabled)}
-                    onEditClicked={() => showEditDialog(tEvent.id)}
+                    onEditClicked={() => showModifyEventEditor(tEvent.id)}
                     onDeleteClicked={() => deleteEvent(tEvent.id)}
                     key={'eventcard' + tEvent.id} />
             ))
         }
-    }
-
-    const onEventEditorChange = (changedProperty, newValue) => {
-        //Changedproperty supports setting object members with the syntax 'object.child.targetproperty'
-        let objectNames = changedProperty.split('.');
-        let targetPropertyName = objectNames.splice(-1, 1)[0];
-
-        let modifiedEvent = Object.assign({}, editorTarget.event);
-
-        let targetObject = modifiedEvent;
-        for (let objectName of objectNames) {
-            targetObject = targetObject[objectName];
-        }
-        targetObject[targetPropertyName].value = newValue;
-
-        let eventContainer = {
-            id: editorTarget.id, enabled: editorTarget.enabled,
-            event: modifiedEvent
-        }
-
-        //If the event type was changed, fetch the outline for the new type
-        if (changedProperty === 'logicType') {
-            server.sendRequest('getEventLogicOutline', { eventType: newValue }).then((logicOutline) => {
-                editorTarget.event.logic.value = formOutlineToProperties(logicOutline);
-                console.info(editorTarget)
-                setEditorTarget(editorTarget);
-            });
-        } else if (changedProperty === 'actionType') {
-            server.sendRequest('getEventActionOutline', { actionType: newValue }).then((actionOutline) => {
-                editorTarget.event.action.value = formOutlineToProperties(actionOutline);
-                setEditorTarget(editorTarget);
-            });
-        }
-
-        setEditorTarget(eventContainer);
     }
 
     const eventEditorSubmit = () => {
@@ -197,7 +184,7 @@ export function EventsPage(props) {
             </div>
 
             <FullscreenModal show={showEditor} title={creatingNewEvent ? 'New event' : 'Edit event'} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}>
-                <FormGroupEditor properties={editorTarget.event} onPropertyChange={onEventEditorChange} customNames={customFormNames(editorTarget)} server={server} />
+                <FormGroupEditor properties={editorTarget.event} onPropertyChange={editorTargetProvider.onPropertyChange} customNames={customFormNames(editorTarget)} server={server} />
             </FullscreenModal>
         </div>
     );

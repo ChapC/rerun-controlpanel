@@ -9,6 +9,7 @@ import moment from 'moment';
 import FullscreenModal from './FullscreenModal';
 import { ContentBlockEditor } from './editors/ContentBlockEditor';
 import './Schedule.css';
+import EditorTargetProvider from './FormGroup/EditorTargetProvider';
 
 const contentBlockTemplate = {
     media: {
@@ -21,23 +22,8 @@ const contentBlockTemplate = {
 
 export function Schedule(props) {
     const [showContentBlockEditor, setShowContentBlockEditor] = useState(false);
+    const [editTargetProvider, setEditTargetProvider] = useState({});
     const [contentBlockEditTarget, setContentBlockEditTarget] = useState(contentBlockTemplate);
-
-    const onEditBlockChange = (changedProperty, newValue) => {
-      //Changedproperty supports setting object members with the syntax 'object.child.targetproperty'
-      let objectNames = changedProperty.split('.');
-      let targetPropertyName = objectNames.splice(-1, 1)[0];
-
-      let modifiedBlock = Object.assign({}, contentBlockEditTarget);
-
-      let targetObject = modifiedBlock;
-      for (let objectName of objectNames) {
-          targetObject = targetObject[objectName];
-      }
-      targetObject[targetPropertyName] = newValue;
-
-      setContentBlockEditTarget(modifiedBlock);
-    }
 
     let blockStartTime = moment(props.startTime);
     
@@ -59,7 +45,9 @@ export function Schedule(props) {
     }
 
     const showBlockEditor = (contentBlock) => {
-        setContentBlockEditTarget(JSON.parse(JSON.stringify(contentBlock)));
+        let provider = new EditorTargetProvider(contentBlock, setContentBlockEditTarget, props.server);
+        setEditTargetProvider(provider);
+        setContentBlockEditTarget(provider.editorTarget);
         setShowContentBlockEditor(true);
     }
 
@@ -118,7 +106,7 @@ export function Schedule(props) {
 
                 <FullscreenModal title={'Edit content block'} onSubmit={onBlockEditorSubmit}
                  show={showContentBlockEditor} onCancel={() => setShowContentBlockEditor(false)}>
-                    <ContentBlockEditor block={contentBlockEditTarget} onPropertyChange={onEditBlockChange} />
+                    <ContentBlockEditor block={contentBlockEditTarget} onPropertyChange={editTargetProvider.onPropertyChange} />
                 </FullscreenModal>
             </div>
         )

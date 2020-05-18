@@ -29,6 +29,7 @@ import ListItem from '@material-ui/core/ListItem';
 import { friendlySourceTypes } from './ContentSourcesPage';
 import IntervalMillisCounter from '../helpers/IntervalMillisCounter';
 import AlertContainer from '../components/AlertContainer';
+import EditorTargetProvider from '../components/FormGroup/EditorTargetProvider';
 
 const userStyles = makeStyles(theme => ({
   root: {
@@ -212,9 +213,12 @@ export function Dashboard(props) {
   }
 
   const [showCreateBlockEditor, setShowCreateBlockEditor] = useState(false);
+  const [editorTargetProvider, setEditorTargetProvider] = useState({});
   const [createBlockEditorTarget, setCreateBlockEditorTarget] = useState(contentBlockTemplate);
+
   const openCreateBlockEditor = () => {
-    setCreateBlockEditorTarget(Object.assign({}, contentBlockTemplate));
+    let targetProvider = new EditorTargetProvider(contentBlockTemplate, setCreateBlockEditorTarget, server);
+    setEditorTargetProvider(targetProvider);
     setShowCreateBlockEditor(true);
     setShowAddBlockMenu(false);
   }
@@ -226,22 +230,6 @@ export function Dashboard(props) {
       console.error('Content block update failed', error);
       alert('Error from server:\n' + error.message);
     });
-  }
-
-  const onCreateBlockChange = (changedProperty, newValue) => {
-    //Changedproperty supports setting object members with the syntax 'object.child.targetproperty'
-    let objectNames = changedProperty.split('.');
-    let targetPropertyName = objectNames.splice(-1, 1)[0];
-
-    let modifiedBlock = Object.assign({}, createBlockEditorTarget);
-
-    let targetObject = modifiedBlock;
-    for (let objectName of objectNames) {
-      targetObject = targetObject[objectName];
-    }
-    targetObject[targetPropertyName] = newValue;
-
-    setCreateBlockEditorTarget(modifiedBlock);
   }
 
   const openAddBlockMenu = (event) => {
@@ -394,7 +382,7 @@ export function Dashboard(props) {
 
         <FullscreenModal title={'Create content block'} onSubmit={onBlockEditorSubmit}
           show={showCreateBlockEditor} onCancel={() => setShowCreateBlockEditor(false)}>
-          <ContentBlockEditor block={createBlockEditorTarget} onPropertyChange={onCreateBlockChange} />
+          <ContentBlockEditor block={createBlockEditorTarget} onPropertyChange={editorTargetProvider.onPropertyChange} />
         </FullscreenModal>
       </div>
     </div>

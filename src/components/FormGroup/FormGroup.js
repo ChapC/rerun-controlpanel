@@ -7,7 +7,7 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import Typography from '@material-ui/core/Typography';
 import Divider from '@material-ui/core/Divider';
-import TreeWalker from './TreeWalker';
+import TreeWalker from '../TreeWalker';
 
 //Renders controls for SavablePropertyGroups
 export default function FormGroup(props) {
@@ -243,9 +243,9 @@ function IntegerProperty(props) {
     }
     return (
         <FormControl className='fullWidthField'>
-            <TextField label={props.property.name} value={props.property.value}
+            <TextField label={props.property.name} value={props.property.value + ''}
                 type='number'
-                onChange={(ev) => props.onChange(parseInt(ev.target.value))} variant='filled'
+                onChange={(ev) => props.onChange(parseInt(ev.target.value) | 0)} variant='filled'
                 error={error} helperText={helpText} />
         </FormControl>
     );
@@ -262,7 +262,7 @@ function NumberProperty(props) {
         <FormControl className='fullWidthField'>
             <TextField label={props.property.name} value={props.property.value}
                 type='number'
-                onChange={(ev) => props.onChange(parseFloat(ev.target.value))} variant='filled'
+                onChange={(ev) => props.onChange(parseFloat(ev.target.value) | 0)} variant='filled'
                 error={error} helperText={helpText} />
         </FormControl>
     );
