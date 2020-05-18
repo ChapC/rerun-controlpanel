@@ -11,7 +11,8 @@ body {
 }
 
 #pageContent {
-  margin: 10px;
+  padding: 10px;
+  box-sizing: border-box;
   height: 100%;
 }
 
@@ -56,18 +57,18 @@ body {
 
 @media only screen and (min-width: 800px) {
   #pageContent {
-    margin: 10px 5vw;
+    padding: 10px 5vw;
   }
 }
 
 @media only screen and (min-width: 1200px) {
   #pageContent {
-    margin: 10px 15vw;
+    padding: 10px 15vw;
   }
 }
 
 @media only screen and (min-width: 1600px) {
   #pageContent {
-    margin: 10px 20vw;
+    padding: 10px 20vw;
   }
 }
