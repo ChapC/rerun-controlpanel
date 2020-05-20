@@ -10,7 +10,7 @@ export default function StringProperty(props) {
     }
     return (
         <FormControl className='fullWidthField'>
-            <TextField label={props.property.name} value={props.property.value}
+            <TextField label={props.label ? props.label : props.property.name} value={props.property.value}
                 onChange={(ev) => props.onChange(ev.target.value)} variant='filled'
                 error={error} helperText={error ? helpText : null} />
         </FormControl>

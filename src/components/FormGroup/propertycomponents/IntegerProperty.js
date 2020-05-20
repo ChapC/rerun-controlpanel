@@ -9,8 +9,8 @@ export default function IntegerProperty(props) {
         helpText = props.helpText;
     }
     return (
-        <FormControl className='fullWidthField'>
-            <TextField label={props.property.name} value={props.property.value + ''}
+        <FormControl className='fullWidthField' style={props.style}>
+            <TextField label={props.label ? props.label : props.property.name} value={props.property.value + ''}
                 type='number'
                 onChange={(ev) => props.onChange(parseInt(ev.target.value) | 0)} variant='filled'
                 error={error} helperText={helpText} />

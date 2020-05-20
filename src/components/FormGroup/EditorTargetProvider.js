@@ -19,6 +19,9 @@ export default class EditorTargetProvider {
         let targetObject = this.editorTarget;
         for (let objectName of objectNames) { //Traverse the editor target using each objectName as a key
             targetObject = targetObject[objectName];
+            if (targetObject.type && targetObject.type === 'subgroup' && targetObject.value) {
+                targetObject = targetObject.value; //If this is a subgroup, skip over the container into the children
+            }
         }
 
         //Set the new value

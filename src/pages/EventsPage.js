@@ -1,51 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { makeStyles, withStyles } from '@material-ui/core/styles';
 import './EventsPage.css';
-import Card from '@material-ui/core/Card';
 import Typography from '@material-ui/core/Typography';
-import Switch from '@material-ui/core/Switch';
-import IconButton from '@material-ui/core/IconButton';
-import DeleteIcon from '@material-ui/icons/Delete';
-import AlarmIcon from '@material-ui/icons/Alarm';
-import EditIcon from '@material-ui/icons/Edit';
-import DoubleArrowIcon from '@material-ui/icons/DoubleArrow';
-import PlayCircleOutlineIcon from '@material-ui/icons/PlayCircleOutline';
-import { BoltIcon } from '../res/BoltIcon';
 import FullscreenModal from '../components/FullscreenModal';
 import FormGroupEditor from '../components/FormGroup/FormGroupEditor';
+import FormProperty from '../components/FormGroup/FormProperty';
 import EditorTargetProvider from '../components/FormGroup/EditorTargetProvider';
 import { formOutlineToProperties, validatedPropertiesToValues } from '../components/FormGroup/FormGroup';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
-import EventNoteIcon from '@material-ui/icons/EventNote';
-
-const userStyles = makeStyles(theme => ({
-    eventTitle: {
-        fontSize: '1.2em'
-    },
-    selectEmpty: {
-        marginTop: theme.spacing(2),
-    }
-}));
-
-const customFormNames = (targetEvent) => {
-    let eventOffsetTitle = "Offset";
-    if (targetEvent.event && targetEvent.event.logic && targetEvent.event.logic.value.fromPosition) {
-        if (targetEvent.event.logic.value.fromPosition.value === "Start of block") {
-            eventOffsetTitle = "Seconds after start";
-        } else if (targetEvent.event.logic.value.fromPosition.value === "End of block") {
-            eventOffsetTitle = "Seconds before end";
-        }
-    }
-
-    return (
-        [
-            { key: "logic.value.eventOffsetSecs", name: eventOffsetTitle },
-            { key: "logic", name: "Event options", placeAfter: "logicType" },
-            { key: "action", placeAfter: "actionType" }
-        ]
-    );
-};
+import EventCard from '../components/EventCard';
 
 //Convert the events from FormProperties to just their values
 const eventListToValueList = (formPropertyList) => {
@@ -118,8 +81,8 @@ export function EventsPage(props) {
                 targetEvent = e;
                 break;
             }
-        }        
-        
+        }
+
         //The EditorTarget class returns the event's properties (logic and action settings), but we want them wrapped in an actual Event object
         let onEditTargetChange = (changedEvent) => setEditorTarget({
             id: targetEvent.id, enabled: targetEvent.enabled, event: changedEvent
@@ -127,7 +90,7 @@ export function EventsPage(props) {
 
         let targetProvider = new EditorTargetProvider(JSON.parse(JSON.stringify(targetEvent.event)), onEditTargetChange, server);
 
-        setEditorTarget({ event: targetProvider.editorTarget});
+        setEditorTarget({ event: targetProvider.editorTarget });
         setEditorTargetProvider(targetProvider);
         setCreatingNewEvent(false);
         setShowEditor(true);
@@ -139,7 +102,7 @@ export function EventsPage(props) {
 
         let targetProvider = new EditorTargetProvider(formOutlineToProperties(eventOutline), onEditTargetChange, server);
 
-        setEditorTarget({ event: targetProvider.editorTarget});
+        setEditorTarget({ event: targetProvider.editorTarget });
         setEditorTargetProvider(targetProvider);
         setCreatingNewEvent(true);
         setShowEditor(true);
@@ -154,7 +117,7 @@ export function EventsPage(props) {
                 </div>
             );
         } else {
-            cards = eventsList.map((tEvent, index) => (
+            cards = eventsList.map((tEvent) => (
                 <EventCard event={tEvent.event} enabled={tEvent.enabled}
                     onSetEnabled={(enabled) => onSetEventEnabled(tEvent.id, enabled)}
                     onEditClicked={() => showModifyEventEditor(tEvent.id)}
@@ -184,172 +147,34 @@ export function EventsPage(props) {
             </div>
 
             <FullscreenModal show={showEditor} title={creatingNewEvent ? 'New event' : 'Edit event'} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}>
-                <FormGroupEditor properties={editorTarget.event} onPropertyChange={editorTargetProvider.onPropertyChange} customNames={customFormNames(editorTarget)} server={server} />
+                <FormGroupEditor properties={editorTarget.event} onPropertyChange={editorTargetProvider.onPropertyChange} server={server}>
+                    <FormProperty key='name' />
+                    <FormProperty key='logicType' />
+                    <FormProperty key='logic'>
+                        {(properties) => {
+                            //Return a different logic configuration component depending on the selected logicType
+                            switch (editorTarget.event.logicType.value) {
+                                case 'During a block':
+                                    return DuringBlockLogic(properties);
+                                default:
+                                    return null; //The FormGroup will render a default editor
+                            }
+                        }}
+                    </FormProperty>
+                </FormGroupEditor>
             </FullscreenModal>
         </div>
     );
 }
 
-const PurpleSwitch = withStyles({
-    switchBase: {
-        '&$checked': {
-            color: '#2f2da6',
-        },
-        '&$checked + $track': {
-            backgroundColor: '#2f2da6',
-        },
-    },
-    checked: {},
-    track: {},
-})(Switch);
-
-const nth = function (d) {
-    if (d > 3 && d < 21) return 'th';
-    switch (d % 10) {
-        case 1: return "st";
-        case 2: return "nd";
-        case 3: return "rd";
-        default: return "th";
-    }
-}
-
-const logicDescriptionRenderers = {
-    'During a block': e => <InBlockAction event={e} />,
-    'In-between blocks': e => <BetweenBlockAction event={e} />
-}
-
-function InBlockAction(props) {
-    let relTimeQualifier = '';
-    if (props.event.logic.fromPosition === 'Start of block') {
-        if (props.event.logic.eventOffsetSecs === 0) {
-            relTimeQualifier = 'At the start'
-        } else {
-            relTimeQualifier = props.event.logic.eventOffsetSecs + 's after the start'
-        }
-    } else if (props.event.logic.fromPosition === 'End of block') {
-        if (props.event.logic.eventOffsetSecs === 0) {
-            relTimeQualifier = 'At the end'
-        } else {
-            relTimeQualifier = props.event.logic.eventOffsetSecs + 's before the end'
-        }
-    }
-
-    return (
-        <div className='playerEventDescription'>
-            <div>
-                <PlayCircleOutlineIcon className='playerEventIcon' />
-                <Typography>
-                    Every {props.event.logic.frequency === 1 ? '' : props.event.logic.frequency + nth(props.event.logic.frequency) + ' '}block
-                </Typography>
-            </div>
-            <div>
-                <AlarmIcon className='playerEventIcon' />
-                <Typography>{relTimeQualifier}</Typography>
-            </div>
+//Custom event logic editors
+const DuringBlockLogic = (properties) => (
+    <>
+        <Typography variant='subtitle1'>Timing</Typography>
+        <div style={{ display: 'flex' }}>
+            <FormProperty key='fromPosition' defaultValue={'Start of block'} style={{ marginRight: '15px' }} />
+            <FormProperty key='eventOffsetSecs' label={properties.fromPosition === 'Start of block' ? 'Seconds after start' : 'Seconds before end'} />
         </div>
-    );
-}
-
-function BetweenBlockAction(props) {
-    return (
-        <div className='playerEventDescription'>
-            <div>
-                <PlayCircleOutlineIcon className='playerEventIcon' />
-                <Typography>
-                    After every {props.event.logic.frequency === 1 ? '' : props.event.logic.frequency + nth(props.event.logic.frequency) + ' '}block
-                </Typography>
-            </div>
-        </div>
-    )
-}
-
-const actionDescriptionRenderers = {
-    'Show a graphic': (e) => <ShowGraphicAction event={e} />
-}
-
-function ShowGraphicAction(props) {
-    let waitTime = null;
-    let outEvent = null;
-
-    return (
-        <div className='playerEventDescription'>
-            <div style={{ alignItems: 'center' }}>
-                <DoubleArrowIcon />
-                <Typography>{props.event.action.targetLayerName}</Typography>
-            </div>
-            {waitTime}
-            {outEvent}
-        </div>
-    );
-}
-
-function EventCard(props) {
-    const classes = userStyles();
-    const mEvent = props.event;
-
-    //Default event descriptions
-    let logicDescription = (<div className='flexCenter backgroundText'><Typography variant='subtitle1'>[Custom event]</Typography></div>)
-    let actionDescription = (<div className='flexCenter'><Typography variant='subtitle2'>?</Typography></div>);
-
-    //Use the action renderer for this event's action type
-    if (actionDescriptionRenderers[mEvent.actionType] != null) {
-        actionDescription = actionDescriptionRenderers[mEvent.actionType](mEvent);
-    }
-
-    //Use the description renderer for this type of event
-    if (logicDescriptionRenderers[mEvent.logicType] != null) {
-        logicDescription = logicDescriptionRenderers[mEvent.logicType](mEvent);
-    }
-
-    let bodyStyle = {};
-    if (!props.enabled) {
-        bodyStyle = { userSelect: 'none', opacity: 0.5 };
-    }
-
-    return (
-        <Card className='eventCardRoot'>
-            <div className='eventCardHeader'>
-                <Typography variant='h6' className={classes.eventTitle} noWrap>{mEvent.name}</Typography>
-                <PurpleSwitch size='small' checked={props.enabled} onChange={() => props.onSetEnabled(!props.enabled)} inputProps={{ 'aria-label': 'event enabled' }} />
-            </div>
-            <div className='eventCardBody' style={bodyStyle}>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                        <div className='eventCardSectionIcon'>
-                            <EventNoteIcon />
-                        </div>
-                        <Typography variant='h5' className='eventCardSectionTitle'>{mEvent.logicType}</Typography>
-                    </div>
-                    <div className='eventCardSection'>
-                        <div className='eventCardSectionBar'></div>
-                        <div className='eventCardDescriptionContainer'>
-                            {logicDescription}
-                        </div>
-                    </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ width: '100%', display: 'flex', alignItems: 'center' }}>
-                        <div className='eventCardSectionIcon'>
-                            <BoltIcon style={{ color: 'white' }} />
-                        </div>
-                        <Typography variant='h5' className='eventCardSectionTitle'>Show a graphic</Typography>
-                    </div>
-                    <div className='eventCardSection'>
-                        <div className='eventCardSectionBar'></div>
-                        <div className='eventCardDescriptionContainer'>
-                            {actionDescription}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div className='eventCardFooter'>
-                <IconButton size='small' onClick={props.onEditClicked}>
-                    <EditIcon />
-                </IconButton>
-                <IconButton size='small' onClick={props.onDeleteClicked}>
-                    <DeleteIcon />
-                </IconButton>
-            </div>
-        </Card>
-    );
-}
+        <FormProperty key='frequency' />
+    </>
+)

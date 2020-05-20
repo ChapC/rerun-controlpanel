@@ -6,18 +6,12 @@ import NumberProperty from './propertycomponents/NumberProperty';
 import StringProperty from './propertycomponents/StringProperty';
 import StringSelectProperty from './propertycomponents/StringSelectProperty';
 import TreePathProperty from './propertycomponents/TreePathProperty';
+import FormProperty from './FormProperty';
 
 //Renders controls for SavablePropertyGroups
 export default function FormGroup(props) {
-    const formItems = [];
-
-    /*Custom property names can be specified with props.customNames.
-    It looks like 
-    [
-        { key: "secondPropertyKey", name: "Renamed second property" }
-    ]
-    
-
+    const propertyComponents = [];
+    /*
     //TODO: This custom data thing should be extended and React-ified. It could probably be specified as children, like
             <FormGroup>
                 //Custom properties go here
@@ -28,99 +22,23 @@ export default function FormGroup(props) {
     */
 
     if (props.properties) {
-        const formObjects = [];
+        const componentContainerArray = []; //Ordered list of ComponentContainers
+        const formComponentMap = {}; //A structure whose keys will mirror props.properties, but with ComponentContainers (that are inside the above array) for values
 
-        //Pre-customization pass - searching for supported ValidatedProperties and nested groups
-        for (let key in props.properties) {
-            let property = props.properties[key];
+        //First, we look for properties within props.properties that have FormProperty components already defined for them
+        const componentProvider = (key, property) => getPropertyComponent(key, property, props.onPropertyChange, props.server);
+        processFormPropertyComponents(props, props.properties, componentContainerArray, formComponentMap, '', componentProvider);
 
-            //Check that it's a ValidatedProperty
-            if (property && property.type) {
-                if (property.type === 'subgroup') {
-                    //The keys on ValidatedProperty's [value] object are ValidatedProperties themselves (a nested group)
-                    const group = {
-                        type: 'group', key: key,
-                        items: []
-                    };
+        //Then, we pick up anything from props.properties that wasn't handled by a FormProperty in the last step. These are appended to the end of the form
+        fillMissingProperties(props.properties, formComponentMap, componentContainerArray, '', componentProvider);
 
-                    for (let childKey in property.value) {
-                        if (property.value[childKey].type) {
-                            group.items.push({ key: `${key}.value.${childKey}`, ...property.value[childKey] });
-                        }
-                    }
-
-                    formObjects.push(group);
-                } else {
-                    formObjects.push({ key: key, ...property });
-                }
-            }
-        }
-
-        //Customization pass
-        if (props.customNames) {
-            for (let customItem of props.customNames) {
-                //Custom names
-                if (customItem.name) {
-                    //Look for the target property in formObjects
-                    for (let targetObj of formObjects) {
-                        if (targetObj.type === 'group') {
-                            //Search within the group
-                            for (let childProperty of targetObj.items) {
-                                if (childProperty.key === customItem.key) {
-                                    childProperty.name = customItem.name;
-                                    break;
-                                }
-                            }
-                        } else {
-                            if (targetObj.key === customItem.key) {
-                                targetObj.name = customItem.name;
-                                break;
-                            }
-                        }
-                    }
-                }
-                //Custom order
-                for (let customItem of props.customNames) {
-                    if (customItem.placeAfter) {
-                        //Find the indexes of placeAfter target and target object
-                        let targetObjIndex, placeAfterIndex;
-
-                        for (let i = 0; i < formObjects.length; i++) {
-                            if (formObjects[i].key === customItem.key) {
-                                targetObjIndex = i;
-                            }
-                            if (formObjects[i].key === customItem.placeAfter) {
-                                placeAfterIndex = i;
-                            }
-                        }
-
-                        if (targetObjIndex && placeAfterIndex && targetObjIndex != placeAfterIndex + 1) {
-                            let targetObj = formObjects[targetObjIndex];
-                            formObjects.splice(targetObjIndex, 1);
-                            formObjects.splice(placeAfterIndex + 1, 0, targetObj);
-                        }
-                    }
-                }
-            }
-        }
-
-        //Convert all the ValidatedProperty objects into components
-        for (let o of formObjects) {
-            if (o.type === 'group') {
-                formItems.push(
-                    <PropertyGroup key={'nested' + o.key}>
-                        {o.items.map((i) => getPropertyComponent(i.key, i, props.onPropertyChange, props.server))}
-                    </PropertyGroup>
-                );
-            } else {
-                formItems.push(getPropertyComponent(o.key, o, props.onPropertyChange, props.server));
-            }
-        }
+        //Finally, convert all the ComponentContainers into components
+        containersToComponents(componentContainerArray, propertyComponents);
     }
 
     return (
         <div style={{ ...props.style }}>
-            {formItems}
+            {propertyComponents}
         </div>
     );
 }
@@ -142,6 +60,143 @@ function getPropertyComponent(key, property, onPropertyChange, server) {
             return (<TreePathProperty key={key} property={property} onChange={(v) => onPropertyChange(key, v)} server={server} />);
         default:
             return null;
+    }
+}
+
+class ComponentContainer {
+    //Also can contains childrenList: [] which is an ordered list of children and childrenMap: {} which is a map of child containers
+    constructor(component, propertyKey) {
+        this.component = component;
+        this.propertyKey = propertyKey; //The key of the form property this component is linked to (if any)
+    }
+}
+
+//Recursively scans parentComponent's children for <FormProperty /> and hooks them up to their target property object
+function processFormPropertyComponents(parentComponent, properties, componentArray, componentMap, keyPrefix, componentProvider) {
+    let children = [];
+    //props.children can either be an array, if there are multiple children, or a singular child if there's only one
+    if (Array.isArray(parentComponent.children)) {
+        children = parentComponent.children;
+    } else if (parentComponent.children != null) {
+        children.push(parentComponent.children);
+    }
+
+    children.map((child, childIndex) => {
+        let childComponent = child;
+        if (typeof(child) === 'function') {
+            //This is a function as-a-child. Call it to get the resulting React components
+            childComponent = child(validatedPropertiesToValues(properties)); //Function children get access to the current property values
+        }
+
+        if (childComponent == null) return;
+
+        if (childComponent.type === FormProperty && childComponent.key) {
+            //Find the property that this FormProperty wants to display
+            let propertyObject = properties[childComponent.key];
+            //Check that the targeted property exists and is a ValidatedProperty (from the server in a format we understand)
+            if (propertyObject && propertyObject.name && propertyObject.type && propertyObject.value != null) {
+                if (propertyObject.type === 'subgroup') {
+                    let groupChildrenArray = [];
+                    let groupChildrenMap = {};
+
+                    if (childComponent.props && childComponent.props.children) {
+                        //Check if there are any defined FormProperty components in here
+                        processFormPropertyComponents(childComponent.props, propertyObject.value, groupChildrenArray, groupChildrenMap, keyWithPrefix(childComponent.key, keyPrefix), componentProvider);
+                    }
+
+                    //Create a ComponentContainer for this group
+                    let component = <PropertyGroup key={'group' + childComponent.key}></PropertyGroup>;
+                    let container = new ComponentContainer(React.cloneElement(childComponent, { ...childComponent.props, formPropertyComponent: component }), childComponent.key);
+
+                    container.childrenList = groupChildrenArray;
+                    container.childrenMap = groupChildrenMap;
+
+                    componentMap[childComponent.key] = container;                                        
+                    componentArray.push(container);
+                } else {
+                    //Grab a component for this property, wrap it in a container and add it to the map and array
+                    let component = componentProvider(keyWithPrefix(childComponent.key, keyPrefix), propertyObject);
+                    let container = new ComponentContainer(React.cloneElement(childComponent, { ...childComponent.props, formPropertyComponent: component }), childComponent.key);
+                    componentMap[childComponent.key] = container;
+                    componentArray.push(container);
+                }
+            }
+        } else {
+            //No need to add this component to the componentMap as it isn't connected to a property
+            if (childComponent.props && childComponent.props.children) {
+                //This is a non-FormProperty with children. There may be FormProperty components inside here! WE NEED TO GO DEEPER!
+                let children = [];
+                processFormPropertyComponents(childComponent.props, properties, children, componentMap, keyPrefix, componentProvider);
+                let container = new ComponentContainer(React.cloneElement(childComponent, { ...childComponent.props, key: childComponent.key | childIndex }));
+                componentArray.push(container);
+                container.childrenList = children;
+                //Convert the children into a property key -> ComponentContainer map
+                let childMap = {};
+                children.map((childContainer, index) => {
+                    childMap[childContainer.propertyKey ? childContainer.propertyKey : index] = childContainer;
+                });
+                container.childrenMap = childMap;
+            } else {
+                //This is a non-FormProperty with no children. Keep this element as-is (as long as it has a key - otherwise add one in)
+                let component = childComponent;
+                if (!childComponent.key && (typeof(childComponent) === 'object' || typeof(childComponent) === 'function')) { //Don't add keys to primitives
+                    component = React.cloneElement(childComponent, {...childComponent.props, key: childIndex})
+                }
+                let container = new ComponentContainer(component);
+                componentArray.push(container);
+            }
+        }
+    });
+}
+
+function fillMissingProperties(properties, existingComponentMap, componentOutArray, keyPrefix, componentProvider) {
+    for (let propertyKey of Object.keys(properties)) {
+        let property = properties[propertyKey];
+        if (property.name && property.type && property.value != null) { //Is this a ValidatedProperty
+            if (property.type === 'subgroup') {
+                let groupContainer = existingComponentMap[propertyKey];
+                //Create a container for this group if one doesn't already exist
+                if (!groupContainer) {
+                    groupContainer = new ComponentContainer(<PropertyGroup key={'group' + propertyKey} />, propertyKey);
+                    componentOutArray.push(groupContainer);
+                    existingComponentMap[propertyKey] = groupContainer;
+                    groupContainer.childrenMap = {};
+                    groupContainer.childrenList = [];
+                }
+
+                //Fill this group's children as well
+                let filledChildren = [];
+                fillMissingProperties(property.value, groupContainer.childrenMap, filledChildren, keyWithPrefix(propertyKey, keyPrefix), componentProvider);
+                groupContainer.childrenList = groupContainer.childrenList.concat(filledChildren);
+            } else {
+                //Has a component already been created for this property?
+                if (!existingComponentMap[propertyKey]) { //No, so we'll create a default one
+                    componentOutArray.push(new ComponentContainer(componentProvider(keyWithPrefix(propertyKey, keyPrefix), property), propertyKey));
+                }
+            }
+        }
+    }
+}
+
+//Recursively converts the ContainerComponents to components and pushes them to componentArray
+function containersToComponents(containerArray, componentArray) {
+    for (let container of containerArray) {
+        if (container.childrenList) {
+            //This container has a bunch of other ComponentContainers as children - they need to be converted too and added to this container's component
+            let componentChildren = [];
+            containersToComponents(container.childrenList, componentChildren);
+            componentArray.push(React.cloneElement(container.component, container.component.props, componentChildren));
+        } else {
+            componentArray.push(container.component);
+        }
+    }
+}
+
+function keyWithPrefix(key, prefix) {
+    if (prefix.length > 0) {
+        return prefix + '.' + key;
+    } else {
+        return key;
     }
 }
 
@@ -168,10 +223,10 @@ export function validatedPropertiesToValues(propGroup) {
     let justValues = {};
     for (let key in propGroup) {
         let prop = propGroup[key];
-        if (prop.value && prop.type) { //This is a FormProperty
-            if (prop.type === 'subgroup') { //This FormProperty a nested form
+        if (prop.name && prop.type && prop.value != null) { //This is a ValidatedProperty
+            if (prop.type === 'subgroup') { //This ValidatedProperty a nested group
                 justValues[key] = validatedPropertiesToValues(prop.value);
-            } else { //This FormProperty is just a normie
+            } else { //This ValidatedProperty is just a normie
                 justValues[key] = prop.value;
             }
         }
