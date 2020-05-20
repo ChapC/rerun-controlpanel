@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Typography from '@material-ui/core/Typography';
 import CheckIcon from '@material-ui/icons/Check';
 import CloseIcon from '@material-ui/icons/Close';
@@ -11,6 +11,19 @@ export default function FullscreenModal(props) {
     if (props.show) {
         containerStyle = {transform: 'translateY(0%)'}
     }
+
+    useEffect(() => {
+        let checkEscapePressed = (ev) => {
+            if (ev.key === 'Escape') {
+                props.onCancel();
+            }
+        }
+
+        //Register an escape keypress listener
+        window.addEventListener('keydown', checkEscapePressed);
+
+        return () => window.removeEventListener('keydown', checkEscapePressed);
+    });
 
     const Modal = (
         <div className='fsRoot'>
