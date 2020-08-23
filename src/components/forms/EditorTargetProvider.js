@@ -1,12 +1,19 @@
-//Contains a mutable target object for a FormGroupEditor. Property changes are automatically applied to the editor via onPropertyChange, and
+import { formOutlineToProperties } from "./FormEditorContext";
+const cloneDeep = require('lodash.clonedeep');
 
-import { formOutlineToProperties } from "./FormGroup";
+/*
+    Contains a mutable target object for a FormEditorContext.
 
-//custom side-effects can be added via the updateTarget callback.
+    Typical usage:
+    1) Fetch a form object from the server side and create an EditorTargetProvider with it. Point updateTarget to an object (modifiedForm) in the parent's React state.
+    2) Display a FormEditorContext, have it display current values from modifiedForm and hook its onPropertyChange callback up to this class.
+    3) The user edits something -> FormEditorContext sends us an alert -> we update modifiedForm -> rerender and repeat!
+    4) Once editing is done, the parent submits modifiedForm to the server.
+*/
 export default class EditorTargetProvider {
 
     constructor(targetBase, updateTarget, server) {
-        this.editorTarget = Object.assign({}, targetBase);
+        this.editorTarget = cloneDeep(targetBase);
         this.updateTarget = updateTarget; //This will usually point to a react setState call
         this.server = server;
     }
@@ -29,7 +36,7 @@ export default class EditorTargetProvider {
             //The target property is a ValidatedProperty object, we want to set the 'value' property
             targetObject[targetPropertyName].value = newValue;
         } else {
-            //The target property is a normal JS object, just set it directly - TODO: Once all other forms have migrated to FormGroup, this check won't be needed
+            //The target property is a normal JS object, just set it directly - TODO: Once all other forms have migrated to the new system on the server-side, this check won't be needed
             targetObject[targetPropertyName] = newValue;
         }
 

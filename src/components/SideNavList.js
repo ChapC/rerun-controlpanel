@@ -10,6 +10,7 @@ import HomeIcon from '@material-ui/icons/Home';
 import DynamicFeedIcon from '@material-ui/icons/DynamicFeed';
 import SettingsInputCompositeIcon from '@material-ui/icons/SettingsInputComposite';
 import { BoltIcon } from '../res/BoltIcon';
+import { Link } from '@material-ui/core';
 
 export function SideNavList(props) {
     const listItemStyle = [];
@@ -38,11 +39,10 @@ export function SideNavList(props) {
         <div id='sideNavRoot'>
             <div id='navLogoSection'>
                 <div id='navLogoContainer'>
-                    <div id='navLogo'></div>
+                    <img src={require('../res/rerunlogo.svg')} />
                 </div>
                 <Typography id='navRerunTitle' variant='h4'>Rerun</Typography>
                 <Typography id='navVersion' variant='h5'>v0.1</Typography>
-                <Typography id='navSignature' variant='subtitle1'><span role='img' aria-label='Coded by'>👨🏽‍💻</span> Chap Callanan <span role='img' aria-label=''>💚</span></Typography>
             </div>
             <Divider style={{margin: '0 30px'}}/>
             <div id='navListContainer'>
@@ -72,6 +72,9 @@ export function SideNavList(props) {
                         <ListItemText className={listItemStyle[3].textClassName} primary='Settings'/>
                     </ListItem>
                 </List>
+            </div>
+            <div id='navSignatureContainer'>
+                <Link id='navSignature' variant='subtitle1' href='https://github.com/ChapC' underline='none'><span role='img' aria-label='Coded by'>👨🏽‍💻</span> Chap Callanan <span role='img' aria-label=''>💚</span></Link>
             </div>
         </div>
     );

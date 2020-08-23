@@ -2,10 +2,9 @@ import React, { useState, useEffect } from 'react';
 import './EventsPage.css';
 import Typography from '@material-ui/core/Typography';
 import FullscreenModal from '../components/FullscreenModal';
-import FormGroupEditor from '../components/FormGroup/FormGroupEditor';
-import FormProperty from '../components/FormGroup/FormProperty';
-import EditorTargetProvider from '../components/FormGroup/EditorTargetProvider';
-import { formOutlineToProperties, validatedPropertiesToValues } from '../components/FormGroup/FormGroup';
+import FormEditorContext, { formOutlineToProperties, validatedPropertiesToValues } from '../components/forms/FormEditorContext';
+import FormProperty from '../components/forms/FormProperty';
+import EditorTargetProvider from '../components/forms/EditorTargetProvider';
 import Button from '@material-ui/core/Button';
 import AddIcon from '@material-ui/icons/Add';
 import EventCard from '../components/EventCard';
@@ -147,7 +146,7 @@ export function EventsPage(props) {
             </div>
 
             <FullscreenModal show={showEditor} title={creatingNewEvent ? 'New event' : 'Edit event'} onCancel={() => setShowEditor(false)} onSubmit={eventEditorSubmit}>
-                <FormGroupEditor properties={editorTarget.event} onPropertyChange={editorTargetProvider.onPropertyChange} server={server}>
+                <FormEditorContext properties={editorTarget.event} onPropertyChange={editorTargetProvider.onPropertyChange} server={server}>
                     <FormProperty key='name' />
                     <FormProperty key='logicType' />
                     <FormProperty key='logic'>
@@ -161,7 +160,7 @@ export function EventsPage(props) {
                             }
                         }}
                     </FormProperty>
-                </FormGroupEditor>
+                </FormEditorContext>
             </FullscreenModal>
         </div>
     );

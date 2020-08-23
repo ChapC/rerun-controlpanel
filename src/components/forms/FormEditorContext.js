@@ -1,5 +1,5 @@
 import React from 'react';
-import './FormGroup.css';
+import './FormEditorContext.css';
 import { Typography, Divider} from '@material-ui/core';
 import IntegerProperty from './propertycomponents/IntegerProperty';
 import NumberProperty from './propertycomponents/NumberProperty';
@@ -8,18 +8,42 @@ import StringSelectProperty from './propertycomponents/StringSelectProperty';
 import TreePathProperty from './propertycomponents/TreePathProperty';
 import FormProperty from './FormProperty';
 
-//Renders controls for SavablePropertyGroups
-export default function FormGroup(props) {
+/*
+    Parent component for the forms system.
+    FormEditorContext wraps a collection of UI components that make up a form to send data to the server-side.
+    The form can be made up of any number of child components and FormEditorContext will search through them and connect up to any
+    <FormProperty /> components within. Any time these <FormProperty /> components are updated by the user, FormEditorContext
+    pushes out those changes via props.onPropertyChange in a format designed to be passed to an EditorTargetProvider.
+
+    The FormEditorContext accepts form objects from the server in this format:
+
+    {
+        userName: { name: "User name", type: "string", value: "Jimmy J. Jayjimothyjams" },
+        age: { name: "Age", type: "integer", value: 385 }
+    }
+
+    and lets you display it like this:
+
+    <FormEditorContext>
+        <div>
+            <img />
+            <span>
+                <FormProperty key='userName' />
+            </span>
+        </div>
+        <div>
+            <SomeOtherComponent>
+                <FormProperty key='age' />
+            </SomeOtherComponent>
+        </div>
+    </FormEditorContext>
+
+    TODO: This last part probably isn't needed anymore. Should be removed.
+    FormEditorContext also displays default <FormProperty /> components for properties that are returned by the server
+    but aren't manually declared in the FormEditorContext's children.
+*/
+export default function FormEditorContext(props) {
     const propertyComponents = [];
-    /*
-    //TODO: This custom data thing should be extended and React-ified. It could probably be specified as children, like
-            <FormGroup>
-                //Custom properties go here
-                <Property key='secondPropertyKey' name: 'Renamed second property' />
-                //Maybe even custom components to override the controls here
-                <CustomPropertyControl key='customPropertyKey' /> //ValidatedProperty passed as a prop
-            </FormGroup>
-    */
 
     if (props.properties) {
         const componentContainerArray = []; //Ordered list of ComponentContainers
@@ -217,7 +241,7 @@ export function formOutlineToProperties(outline) {
     return blankForm;
 }
 
-//Converts an object with ValidatedProperties to an object with their values
+//Converts a server-side properties object to a plain key-value object
 //eg. {favCol: {name: "Favourite colour", type:"string", value:"green"}} --> {favCol: "green"}
 export function validatedPropertiesToValues(propGroup) {
     let justValues = {};

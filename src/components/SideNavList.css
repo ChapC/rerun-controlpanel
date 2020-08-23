@@ -12,7 +12,6 @@
 }
 
 #navLogoSection {
-    height: 30%;
     padding: 10px;
     box-sizing: border-box;
     display: flex;
@@ -29,11 +28,9 @@
     align-items: center;
 }
 
-#navLogo {
-    background-color: lightcoral;
-    box-sizing: border-box;
-    height: 60%;
-    width: 60%;
+#navLogoContainer > img {
+    height: 100px;
+    padding: 20px 0;
 }
 
 #navRerunTitle {
@@ -44,8 +41,24 @@
     font-size: 1.1em;
 }
 
+#navSignatureContainer {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
 #navSignature {
     font-size: 0.9em;
+    opacity: 0.8;
+    color: black;
+    transition: opacity 100ms;
+}
+
+#navSignature:hover {
+    opacity: 1;
 }
 
 @media only screen and (max-height: 650px) {

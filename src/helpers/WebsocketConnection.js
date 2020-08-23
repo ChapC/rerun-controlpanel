@@ -240,11 +240,11 @@ function isPromise(something) {
     WSConnection.SuccessResponse = SuccessResponse;
     var ErrorResponse = /** @class */ (function () {
         function ErrorResponse(code, message) {
-            this.code = code;
+            this.errorCode = code;
             this.message = message;
         }
         ErrorResponse.isInstance = function (something) {
-            return (something.errorCode != null && something.message != null);
+            return (something.errorCode != null && something.reqId != null);
         };
         return ErrorResponse;
     }());

@@ -1,5 +1,19 @@
 body {
   background-color: #ededed;
+
+  --theme-primary-colour: #552da6;
+  --theme-primary-colour-dark: #3b1f73;
+}
+
+.themeColourPrimary {
+  color: var(--theme-primary-colour);
+}
+
+.controlPanelRoot {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 #root {
@@ -14,6 +28,7 @@ body {
   padding: 10px;
   box-sizing: border-box;
   height: 100%;
+  width: 100%;
 }
 
 #pageContainer {
@@ -29,7 +44,7 @@ body {
   top: 0;
   justify-content: center;
   align-items: center;
-  z-index: 12;
+  z-index: 9999;
 }
 
 #connectOverlay > .MuiCircularProgress-root {
@@ -55,20 +70,9 @@ body {
   opacity: 0.5;
 }
 
-@media only screen and (min-width: 800px) {
-  #pageContent {
-    padding: 10px 5vw;
-  }
-}
-
-@media only screen and (min-width: 1200px) {
-  #pageContent {
-    padding: 10px 15vw;
-  }
-}
-
-@media only screen and (min-width: 1600px) {
-  #pageContent {
-    padding: 10px 20vw;
+/* lg - large screen*/
+@media (min-width: 1280px) {
+  .controlPanelRoot {
+    margin-left: 250px;
   }
 }

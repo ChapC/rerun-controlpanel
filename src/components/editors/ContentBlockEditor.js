@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './ContentBlockEditor.css';
 import Typography from '@material-ui/core/Typography';
 import FormControl from '@material-ui/core/FormControl';
@@ -10,7 +10,7 @@ import InputLabel from '@material-ui/core/InputLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 
-const colours = ['#282482', 'coral', '#f03232', 'limegreen', '#3382ff', '#f0e032', '#d332f0', '#ed4cc5'];
+const colours = ['#282482', '#FF7F50', '#f03232', '#32CD32', '#3382ff', '#f0e032', '#d332f0', '#ed4cc5'];
 
 export function ContentBlockEditor(props) {
     let mediaProperties = null;
@@ -35,28 +35,12 @@ export function ContentBlockEditor(props) {
                         <Divider orientation='vertical' />
                     </div>
                     <div className='fullWidthField'>
-                        <FormControl>
-                            <TextField label='Title' onChange={(ev) => {props.onPropertyChange('media.name', ev.target.value)}}
-                                variant='filled' value={props.block.media.name} />
-                        </FormControl>
+                            <TextField label='Title' onChange={(ev) => props.onPropertyChange('media.name', ev.target.value)}
+                                variant='filled' value={props.block.media.name} key='media.name' />
                         <div>
                             <Typography variant='subtitle2'>Colour</Typography>
                             <ColourSelector colours={colours} onSelect={(c) => props.onPropertyChange('colour', c)}
                                 selected={props.block.colour} className='blockEditColSelect' />
-                        </div>
-                        <div>
-                            <Typography variant='subtitle2'>Media trimming</Typography>
-                            <div style={{display: 'flex'}}>
-                                <FormControl>
-                                    <TextField label='Start trim' onChange={(ev) => {props.onPropertyChange('playbackConfig.trimStartSec', ev.target.value)}}
-                                        type='number' variant='filled' value={props.block.playbackConfig.trimStartSec} />
-                                </FormControl>
-                                <div style={{width: '10px'}}></div>
-                                <FormControl>
-                                    <TextField label='End trim' onChange={(ev) => {props.onPropertyChange('playbackConfig.trimEndSec', ev.target.value)}}
-                                        type='number' variant='filled' value={props.block.playbackConfig.trimEndSec} />
-                                </FormControl>
-                            </div>
                         </div>
                     </div>
                 </div>

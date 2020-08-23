@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import FormGroup from '../components/FormGroup/FormGroup';
+import FormEditorContext from '../components/forms/FormEditorContext';
 import { debounce } from "debounce";
 
 const submitProperty = debounce((propertyKey, newValue, server) => {
@@ -26,7 +26,7 @@ export default function SettingsPage(props) {
 
     return (
         <div>
-            <FormGroup properties={settings} onPropertyChange={onPropertyChange} />
+            <FormEditorContext properties={settings} onPropertyChange={onPropertyChange} />
         </div>
     );
 }
