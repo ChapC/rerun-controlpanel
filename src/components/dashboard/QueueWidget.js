@@ -83,9 +83,9 @@ export default function QueueWidget(props) {
     if (blockQueue) {
         listItems = blockQueue.map((contentBlock, listIndex) => {
             let listItem = (
-                <QueuedWidgetItem media={contentBlock.media} id={contentBlock.id} colour={contentBlock.colour}
+                <QueuedWidgetItem media={contentBlock.media} id={contentBlock.queuedId} colour={contentBlock.colour}
                     status={contentBlock.mediaStatus} startTime={blockStartTime} onEditClicked={() => showBlockEditor(contentBlock)}
-                    index={listIndex} key={contentBlock.id} onDeleteClicked={() => onBlockDelete(listIndex)} />
+                    index={listIndex} key={contentBlock.queuedId} onDeleteClicked={() => onBlockDelete(listIndex)} />
             );
 
             //Increase startTime by the duration of this media

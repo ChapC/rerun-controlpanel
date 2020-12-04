@@ -3,6 +3,7 @@ import './Dashboard.css';
 import { Grid, Card, Typography } from '@material-ui/core';
 import QueueWidget from '../components/dashboard/QueueWidget';
 import OnScreenNowWidget from '../components/dashboard/OnScreenNowWidget';
+import StreamMonitorWidget from '../components/dashboard/StreamMonitorWidget';
 
 export function Dashboard(props) {
   return (
@@ -19,6 +20,7 @@ export function Dashboard(props) {
         <Grid item xs={12} sm={6} md={4} className='dashGridItem'>
           <Card className='dashSmallCard'>
             <Typography variant="h5" className='dashCardTitle'>Stream</Typography>
+            <StreamMonitorWidget server={props.server} />
           </Card>
         </Grid>
         <Grid item xs={12} sm={6} md={4} className='dashGridItem'>

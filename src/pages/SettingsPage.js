@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import FormEditorContext from '../components/forms/FormEditorContext';
 import { debounce } from "debounce";
 
-const submitProperty = debounce((propertyKey, newValue, server) => {
-    server.sendRequest('setUserSetting', { propertyKey: propertyKey, value: newValue }).then((response) => {
+const submitModifiedSettings = debounce((newSettings, server) => {
+    server.sendRequest('setUserSetting', newSettings).then((response) => {
         console.info(response);
     }).catch(error => console.error(error));
 }, 800);
@@ -18,9 +18,9 @@ export default function SettingsPage(props) {
     });
 
     const onPropertyChange = (propertyKey, newValue) => {
-        submitProperty(propertyKey, newValue, props.server);
         let settingsCopy = Object.assign({}, settings);
         settingsCopy[propertyKey].value = newValue;
+        submitModifiedSettings(settingsCopy, props.server);
         setSettings(settingsCopy);
     }
 
