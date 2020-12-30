@@ -9,7 +9,7 @@ import { ContentBlockEditor } from '../editors/ContentBlockEditor';
 import './QueueWidget.css';
 import EditorTargetProvider from '../forms/EditorTargetProvider';
 
-let queueListener, playingListener;
+let playerQueueSub, activeBlocksSub;
 let forceUpdateCounter = 1;
 export default function QueueWidget(props) {
     //Player state
@@ -30,16 +30,16 @@ export default function QueueWidget(props) {
     useEffect(() => {
         if (blockQueue == null) {
             props.server.sendRequest('getQueue').then(setBlockQueue).catch(error => console.error('Failed to fetch queue', error));
-            queueListener = props.server.onAlert('playerQueueChanged', setBlockQueue);
+            playerQueueSub = props.server.subscribe('player-queue', setBlockQueue);
             //We also need the current playing block so we can figure out what time the next queued block will begin
             props.server.sendRequest('getPlayingBlocks').then(updateCurrentBlockFinish).catch(error => console.error('Failed to fetch player state', error));
-            playingListener = props.server.onAlert('playerStateChanged', updateCurrentBlockFinish);
+            activeBlocksSub = props.server.subscribe('player-activeblocks', updateCurrentBlockFinish);
         }
     }, [blockQueue, props.server]);
 
     useEffect(() => () => {
-        props.server.offAlert(queueListener);
-        props.server.offAlert(playingListener);
+        playerQueueSub.cancel();
+        activeBlocksSub.cancel();
     }, []);
 
     //User actions

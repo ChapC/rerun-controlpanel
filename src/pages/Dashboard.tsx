@@ -4,8 +4,12 @@ import { Grid, Card, Typography } from '@material-ui/core';
 import QueueWidget from '../components/dashboard/QueueWidget';
 import OnScreenNowWidget from '../components/dashboard/OnScreenNowWidget';
 import StreamMonitorWidget from '../components/dashboard/StreamMonitorWidget';
+import { WSConnection } from '../helpers/WebsocketConnection';
+import Alert from '../helpers/Alerts';
 
-export function Dashboard(props) {
+type DashboardProps = { server: WSConnection, alerts: Alert[] };
+
+export default function Dashboard(props: DashboardProps) {
   return (
     <div>
       <Grid container justify='space-evenly' style={{ width: '100%' }}>

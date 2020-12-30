@@ -7,6 +7,9 @@ import SkipNextIcon from '@material-ui/icons/SkipNext';
 import StopIcon from '@material-ui/icons/Stop';
 import ReplayIcon from '@material-ui/icons/Replay';
 import './LayersView.css';
+import { WSConnection, WSSubscription, SuccessResponse } from '../../helpers/WebsocketConnection';
+import { ContentBlockWithProgress } from '../../rerun-server-types/ContentBlock';
+import { ContentType, MediaLocation, MediaObject } from '../../rerun-server-types/MediaObject';
 
 const userStyles = makeStyles( theme => ({
     fullLengthProgress: {
@@ -16,21 +19,22 @@ const userStyles = makeStyles( theme => ({
     }
 }));
 
-let predictedProgressTimer;
-let playbackListener;
+let predictedProgressTimer: IntervalMillisCounter;
+let activeBlocksSubscription: WSSubscription;
 
-export default function OnScreenNowWidget(props) {
+type OnScreenNowWidgetProps = { server: WSConnection, };
+export default function OnScreenNowWidget(props: OnScreenNowWidgetProps) {
     const theme = useTheme();
     const classes = userStyles();
     const reallySmallScreen = useMediaQuery(theme.breakpoints.down('xs'))
     const smallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-    const [playingBlocks, setPlayingBlocks] = useState(null);
+    const [playingBlocks, setPlayingBlocks] = useState<ContentBlockWithProgress[]>();
     const [msSinceUpdate, setMsSinceUpdate] = useState(0);
 
-    const acceptPlayingBlocksFromServer = (playingBlocks) => {
+    const acceptPlayingBlocksFromServer = (playingBlocks: SuccessResponse) => {
         predictedProgressTimer.stop();
-        setPlayingBlocks(playingBlocks);
+        setPlayingBlocks(playingBlocks.data);
         setMsSinceUpdate(0);
         predictedProgressTimer.start(0);
     }
@@ -39,18 +43,18 @@ export default function OnScreenNowWidget(props) {
         if (playingBlocks == null) { //Request player state if we don't have it yet
             props.server.sendRequest('getPlayingBlocks').then(acceptPlayingBlocksFromServer);
             //Change listener
-            playbackListener = props.server.onAlert('playerStateChanged', acceptPlayingBlocksFromServer);
+            activeBlocksSubscription = props.server.subscribe('player-activeblocks', acceptPlayingBlocksFromServer);
             //Client-side progress counter
             predictedProgressTimer = new IntervalMillisCounter(500, setMsSinceUpdate);
         }
     }, [playingBlocks, props.server]);
 
     useEffect(() => () => {
-        props.server.offAlert(playbackListener);
+        activeBlocksSubscription.cancel();
         predictedProgressTimer.stop();
     }, []);
 
-    let currentBlockIsInfinite = playingBlocks ? playingBlocks[0].media.durationMs == null : false;
+    let currentBlockIsInfinite = playingBlocks ? playingBlocks[0].media.durationMs == -1 : false;
     let currentBlockEndTime = playingBlocks ? millisToHrsMinsSec(playingBlocks[0].media.durationMs) : '-:--';
     if (currentBlockIsInfinite) {
         currentBlockEndTime = '∞';
@@ -121,7 +125,8 @@ export default function OnScreenNowWidget(props) {
     );
 }
 
-function LayersView(props) {
+type LayersViewProps = { blocks: ContentBlockWithProgress[], msSinceUpdate: number };
+function LayersView(props: LayersViewProps) {
     let layerComponents = null;
     if (props.blocks) {
         layerComponents = [];
@@ -138,7 +143,8 @@ function LayersView(props) {
     );
 }
 
-function Layer(props) {
+type LayerProps = { media: MediaObject, progressMs: number };
+function Layer(props: LayerProps) {
     return (
         <Paper variant='outlined' className='layerPaper' style={{ borderColor: '#ad98d6' }}>
             <div className='layerForeground'>
@@ -155,13 +161,13 @@ function Layer(props) {
     );
 }
 
-const friendlyLocationTypes = {
+const friendlyLocationTypes: {[index: string] : string}= {
     'GraphicsLayer': 'Graphics package',
     'LocalFile' : 'On disk',
     'WebStream': 'Web stream'
 }
 
-function friendlyLocationOrDefault(location) {
+function friendlyLocationOrDefault(location: ContentType) {
     let friendly = friendlyLocationTypes[location];
     if (friendly == null) {
       friendly = location;
@@ -169,7 +175,7 @@ function friendlyLocationOrDefault(location) {
     return friendly;
 }
 
-function millisToHrsMinsSec(millis) {
+function millisToHrsMinsSec(millis: number) : string {
     let hours = Math.floor((millis / 3600000) % 60);
     let minutes = Math.floor((millis / 60000) % 60);
     let seconds = Math.floor((millis / 1000) % 60);
